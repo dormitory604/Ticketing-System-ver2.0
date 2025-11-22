@@ -13,31 +13,6 @@ client-app
 	图形化界面，提供给用户来查询航班信息，提供订阅航班服务。
 ```
 ## 日常开发流程
-### 1. 更新主仓库
-```bash
-git clone git@github.com:YourName/ticket-system.git // 仅第一次配置时
-
-cd ticket-system
-git pull
-git submodule update --init --recursive // 初始化并拉取所有子模块
-```
-### 2. 修改代码
-```bash
-cd client-app // 示例
-git add .
-git commit -m "Fix bug in admin-app"
-git push
-```
-
-### 3. 更新主仓库子模块指针
-```bash
-cd ..
-git add admin-app
-git commit -m "Update admin-app submodule pointer"
-git push
-```
-
-**主仓库只记录子模块 commit ID，不包含子模块代码本身。**
 
 ## 功能需求文档(v1.0)
 1. **用户端 (Client) 功能：**    
