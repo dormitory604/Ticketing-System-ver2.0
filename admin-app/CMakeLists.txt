@@ -10,19 +10,28 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)
 
 set(PROJECT_SOURCES
         main.cpp
-        mainwindow.cpp
-        mainwindow.h
-        mainwindow.ui
+        admin_dashboard.cpp
+        admin_dashboard.h
+        admin_dashboard.ui
+        admin_login_window.cpp
+        admin_login_window.h
+        admin_login_window.ui
+        network_manager.h
+        network_manager.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(admin-app
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
+        admin_login_window.h admin_login_window.cpp admin_login_window.ui
+        network_manager.h network_manager.cpp
+
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET admin-app APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -42,7 +51,8 @@ else()
     endif()
 endif()
 
-target_link_libraries(admin-app PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(admin-app PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network)
+target_link_libraries(admin-app PRIVATE Qt${QT_VERSION_MAJOR}::Core)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
