@@ -13,6 +13,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 添加子项目
-add_subdirectory(client-app)
+# add_subdirectory(client-app)  // 暂时先不运行client-app
 add_subdirectory(server-app)
 add_subdirectory(admin-app)
