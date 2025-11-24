@@ -42,14 +42,25 @@ void NetworkManager::onReadyRead()
     if (status == "error") {
         qWarning() << "服务器返回错误:" << message << " (Action: " << action << ")";
 
-        // 现在我们可以根据 action 路由到特定的错误信号
         if (action == "login") {
-            emit loginFailed(message); // 发出特定的 "登录失败" 信号
+            emit loginFailed(message);
         }
-        // else if (action == "search_flights") {
-        //     emit searchFailed(message); // 后续要添加这个信号
+        else if (action == "search_flights") {
+            emit generalError(message);
+        }
+        else if (action == "register") {
+            emit registerFailed(message);
+        }
+        else if (action == "book_flight") {
+            emit bookingFailed(message);
+        }
+        else if (action == "get_my_orders") {
+            emit generalError(message);
+        }
+        else if (action == "cancel_order") {
+            emit cancelOrderFailed(message);
+        }
         else {
-            // 对于所有其他错误，或 action 未知的错误，发通用错误
             emit generalError(message);
         }
         return;
@@ -63,12 +74,22 @@ void NetworkManager::onReadyRead()
 
     // 开始路由
     if (action == "login") {
-        // 登录响应
         emit loginSuccess(response["data"].toObject());
     }
     else if (action == "search_flights") {
-        // 航班查询响应
         emit searchResults(response["data"].toArray());
+    }
+    else if (action == "register") {
+        emit registerSuccess(message);
+    }
+    else if (action == "book_flight") {
+        emit bookingSuccess(response["data"].toObject());
+    }
+    else if (action == "get_my_orders") {
+        emit myOrdersResult(response["data"].toArray());
+    }
+    else if (action == "cancel_order") {
+        emit cancelOrderSuccess(message);
     }
     /*
     else if (action == "admin_add_flight") {
@@ -134,6 +155,56 @@ void NetworkManager::sendSearchRequest(const QString& origin, const QString& des
 
     QJsonObject request;
     request["action"] = "search_flights";
+    request["data"] = data;
+
+    sendJsonRequest(request);
+}
+
+void NetworkManager::sendRegisterRequest(const QString& username, const QString& password)
+{
+    QJsonObject data;
+    data["username"] = username;
+    data["password"] = password;
+
+    QJsonObject request;
+    request["action"] = "register";
+    request["data"] = data;
+
+    sendJsonRequest(request);
+}
+
+void NetworkManager::bookFlightRequest(int userId, int flightId)
+{
+    QJsonObject data;
+    data["user_id"] = userId;
+    data["flight_id"] = flightId;
+
+    QJsonObject request;
+    request["action"] = "book_flight";
+    request["data"] = data;
+
+    sendJsonRequest(request);
+}
+
+void NetworkManager::getMyOrdersRequest(int userId)
+{
+    QJsonObject data;
+    data["user_id"] = userId;
+
+    QJsonObject request;
+    request["action"] = "get_my_orders";
+    request["data"] = data;
+
+    sendJsonRequest(request);
+}
+
+void NetworkManager::cancelOrderRequest(int bookingId)
+{
+    QJsonObject data;
+    data["booking_id"] = bookingId;
+
+    QJsonObject request;
+    request["action"] = "cancel_order";
     request["data"] = data;
 
     sendJsonRequest(request);

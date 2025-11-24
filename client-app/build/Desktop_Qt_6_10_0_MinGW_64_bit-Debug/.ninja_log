@@ -1,0 +1,26 @@
+# ninja log v7
+6	108	7856928917092576	D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/CMakeFiles/cmake.verify_globs	439c224db42acaee
+105	1414	7856927820514754	client-app_autogen/timestamp	81ae92a3e26c921f
+105	1414	7856927820514754	client-app_autogen/mocs_compilation.cpp	81ae92a3e26c921f
+105	1414	7856927820514754	D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/timestamp	81ae92a3e26c921f
+105	1414	7856927820514754	D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/mocs_compilation.cpp	81ae92a3e26c921f
+1512	3635	7856927822395710	CMakeFiles/client-app.dir/app_session.cpp.obj	315040a0d12e9f11
+1492	3909	7856927822189842	CMakeFiles/client-app.dir/network_manager.cpp.obj	904a19d13ce99ae9
+1440	4344	7856927821655882	CMakeFiles/client-app.dir/main.cpp.obj	a6ea656f2653f7d0
+1523	4545	7856927822502013	CMakeFiles/client-app.dir/register_window.cpp.obj	4c373f021234d095
+1418	4562	7856927821454334	CMakeFiles/client-app.dir/client-app_autogen/mocs_compilation.cpp.obj	c22971d27b28ba06
+1463	4605	7856927821897769	CMakeFiles/client-app.dir/mainwindow.cpp.obj	481b21de3eca1eb
+1547	4790	7856927822734840	CMakeFiles/client-app.dir/myorders_window.cpp.obj	ffbf49c1aa17134e
+1535	4989	7856927822618362	CMakeFiles/client-app.dir/search_window.cpp.obj	86b42e66fe060f55
+4989	5631	7856927857163553	client-app.exe	b4cb82b5c0ce5401
+109	1834	7856928933941425	build.ninja	8d365eea1f7a450b
+3	98	7856928934799458	D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/CMakeFiles/cmake.verify_globs	439c224db42acaee
+107	554	7856928935830816	client-app_autogen/timestamp	81ae92a3e26c921f
+107	554	7856928935830816	client-app_autogen/mocs_compilation.cpp	81ae92a3e26c921f
+107	554	7856928935830816	D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/timestamp	81ae92a3e26c921f
+107	554	7856928935830816	D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/mocs_compilation.cpp	81ae92a3e26c921f
+569	3408	7856928940426895	CMakeFiles/client-app.dir/register_window.cpp.obj	4c373f021234d095
+554	3410	7856928940306360	CMakeFiles/client-app.dir/mainwindow.cpp.obj	481b21de3eca1eb
+600	3617	7856928940765494	CMakeFiles/client-app.dir/myorders_window.cpp.obj	ffbf49c1aa17134e
+585	3769	7856928940591399	CMakeFiles/client-app.dir/search_window.cpp.obj	86b42e66fe060f55
+3769	4177	7856928972458086	client-app.exe	b4cb82b5c0ce5401

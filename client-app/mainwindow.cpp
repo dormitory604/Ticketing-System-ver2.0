@@ -2,12 +2,17 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "network_manager.h"
-#include <QMessageBox>
+#include "register_window.h"
 #include "search_window.h"
+#include "app_session.h"
+
+#include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
+    , m_registerWindow(nullptr)
+    , m_searchWindow(nullptr)
 {
     ui->setupUi(this);
 
@@ -17,11 +22,17 @@ MainWindow::MainWindow(QWidget *parent)
     connect(&NetworkManager::instance(), &NetworkManager::loginFailed,
             this, &MainWindow::onLoginFailed);
     connect(&NetworkManager::instance(), &NetworkManager::generalError,
-            this, &MainWindow::onLoginFailed);
+            this, &MainWindow::onGeneralError);
 }
 
 MainWindow::~MainWindow()
 {
+    if (m_registerWindow) {
+        m_registerWindow->deleteLater();
+    }
+    if (m_searchWindow) {
+        m_searchWindow->deleteLater();
+    }
     delete ui;
 }
 
@@ -42,19 +53,34 @@ void MainWindow::on_loginButton_clicked()
 void MainWindow::onLoginSuccess(const QJsonObject& userData)
 {
     // (userData 里有 user_id, is_admin 等信息, 可以保存起来)
-    // (例如: AppSession::instance().setCurrentUser(userData); )
+    AppSession::instance().setCurrentUser(userData);
 
     QMessageBox::information(this, "成功", "登录成功!");
 
-    // 跳转到主窗口/查询窗口（TODO）
-    // ！！！！！！！！TODO！！！！！！！！！！！
-    SearchWindow *sw = new SearchWindow(this); // 这个窗口还没做。
-    sw->show();
-    this->close(); // 关闭登录窗口
+    if (!m_searchWindow) {
+        m_searchWindow = new SearchWindow();
+    }
+    m_searchWindow->show();
+    this->hide(); // 登录成功后隐藏登录窗口
 }
 
 // 登录失败的slot函数
 void MainWindow::onLoginFailed(const QString& message)
 {
     QMessageBox::warning(this, "失败", message);
+}
+
+void MainWindow::on_registerButton_clicked()
+{
+    if (!m_registerWindow) {
+        m_registerWindow = new RegisterWindow(this);
+    }
+    m_registerWindow->show();
+    m_registerWindow->raise();
+    m_registerWindow->activateWindow();
+}
+
+void MainWindow::onGeneralError(const QString& message)
+{
+    QMessageBox::critical(this, "网络错误", message);
 }

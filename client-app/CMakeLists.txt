@@ -22,6 +22,17 @@ set(PROJECT_SOURCES
         mainwindow.ui
         network_manager.cpp
         network_manager.h
+        app_session.cpp
+        app_session.h
+        register_window.cpp
+        register_window.h
+        register_window.ui
+        search_window.cpp
+        search_window.h
+        search_window.ui
+        myorders_window.cpp
+        myorders_window.h
+        myorders_window.ui
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
