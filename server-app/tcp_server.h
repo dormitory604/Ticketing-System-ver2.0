@@ -33,7 +33,12 @@ private slots:
 
 private:
     QTcpServer *m_server;
-    QHash<QString, QTcpSocket*> clients; // key = 客户端 tag, value = socket
+
+    struct ClientInfo {
+        QString tag;
+    };
+
+    QHash<QTcpSocket*, ClientInfo> clients;
 
     // 这是功能分发函数，看其中的action内容来决定调用哪个具体函数
     QJsonObject handleRequest(const QJsonObject& request);
