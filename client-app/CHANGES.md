@@ -17,9 +17,11 @@
 ## 主要改动
 1. **CMake 构建**（`client-app/CMakeLists.txt`）
    - 将新建的 Session/Window 文件加入 `PROJECT_SOURCES`，确保会随项目一起编译。
+   - 新增 `CLIENT_APP_USE_FAKE_SERVER` 选项。配置时传入 `-DCLIENT_APP_USE_FAKE_SERVER=ON` 会为 `client-app` 目标定义 `USE_FAKE_SERVER` 宏，以开启本地假数据模式。
 
 2. **NetworkManager 扩展**
    - `network_manager.h/.cpp`：新增 `sendRegisterRequest`, `bookFlightRequest`, `getMyOrdersRequest`, `cancelOrderRequest` 以及对应成功/失败信号；`onReadyRead()` 根据 `action_response` 精细路由；错误时触发更具体的信号满足 README 的发射器/信号规范。
+   - 当 `USE_FAKE_SERVER` 宏开启时，`NetworkManager` 不再创建真实 `QTcpSocket`，而是在各个 `send*Request` 中直接调用 `emitFake*` 系列函数，通过 `QTimer` 异步发射与服务器响应一致的信号（登录/搜索/注册/预订/订单/取消），方便离线测试 UI 流程；默认情况下该宏未启用，仍保持对真实服务器的 TCP 通信。
 
 3. **登录窗口改造**
    - `mainwindow.ui`：重建 UI，包含用户名/密码输入、登录按钮与“注册新用户”按钮，并提示用户流程。

@@ -1,7 +1,12 @@
 #include "network_manager.h"
 
+#include <QTimer>
+
 NetworkManager::NetworkManager(QObject *parent) : QObject(parent)
 {
+#ifdef USE_FAKE_SERVER
+    m_socket = nullptr;
+#else
     m_socket = new QTcpSocket(this);
 
     // 绑定 QtSocket 的内置信号到我们自己的槽
@@ -9,17 +14,28 @@ NetworkManager::NetworkManager(QObject *parent) : QObject(parent)
     connect(m_socket, &QTcpSocket::disconnected, this, &NetworkManager::onDisconnected);
     connect(m_socket, &QTcpSocket::readyRead, this, &NetworkManager::onReadyRead);
     connect(m_socket, &QAbstractSocket::errorOccurred, this, &NetworkManager::onError);
+#endif
 }
 
 NetworkManager::~NetworkManager() {}
 
 void NetworkManager::connectToServer(const QString& host, quint16 port)
 {
+#ifdef USE_FAKE_SERVER
+    Q_UNUSED(host);
+    Q_UNUSED(port);
+    qInfo() << "[FAKE SERVER] 跳过真实服务器连接";
+    QTimer::singleShot(0, this, [this]() {
+        emit connected();
+    });
+#else
     qInfo() << "连接到服务器..." << host << ":" << port;
     m_socket->connectToHost(host, port);
+#endif
 }
 
 // 当收到服务器数据时 (JSON解析)
+#ifndef USE_FAKE_SERVER
 void NetworkManager::onReadyRead()
 {
     QByteArray data = m_socket->readAll();
@@ -101,6 +117,9 @@ void NetworkManager::onReadyRead()
         qWarning() << "收到未知的成功响应 action: " << action;
     }
 }
+#else
+void NetworkManager::onReadyRead() {}
+#endif
 
 void NetworkManager::onConnected() {
     qInfo() << "已连接到服务器!";
@@ -119,6 +138,11 @@ void NetworkManager::onError(QAbstractSocket::SocketError socketError) {
 // 发送JSON的通用函
 void NetworkManager::sendJsonRequest(const QJsonObject& request)
 {
+#ifdef USE_FAKE_SERVER
+    Q_UNUSED(request);
+    qWarning() << "[FAKE SERVER] sendJsonRequest 被调用，但当前为本地模拟模式";
+    return;
+#else
     if (m_socket->state() != QAbstractSocket::ConnectedState) {
         qWarning() << "未连接到服务器，无法发送消息";
         emit generalError("未连接到服务器");
@@ -128,6 +152,7 @@ void NetworkManager::sendJsonRequest(const QJsonObject& request)
     QJsonDocument doc(request);
     m_socket->write(doc.toJson());
     qDebug() << "发送JSON请求:" << request;
+#endif
 }
 
 
@@ -135,6 +160,11 @@ void NetworkManager::sendJsonRequest(const QJsonObject& request)
 
 void NetworkManager::sendLoginRequest(const QString& username, const QString& password)
 {
+#ifdef USE_FAKE_SERVER
+    Q_UNUSED(password);
+    emitFakeLoginResponse(username);
+    return;
+#endif
     QJsonObject data;
     data["username"] = username;
     data["password"] = password;
@@ -148,6 +178,10 @@ void NetworkManager::sendLoginRequest(const QString& username, const QString& pa
 
 void NetworkManager::sendSearchRequest(const QString& origin, const QString& dest, const QString& date)
 {
+#ifdef USE_FAKE_SERVER
+    emitFakeSearchResults(origin, dest, date);
+    return;
+#endif
     QJsonObject data;
     if (!origin.isEmpty()) data["origin"] = origin;
     if (!dest.isEmpty()) data["destination"] = dest;
@@ -162,6 +196,11 @@ void NetworkManager::sendSearchRequest(const QString& origin, const QString& des
 
 void NetworkManager::sendRegisterRequest(const QString& username, const QString& password)
 {
+#ifdef USE_FAKE_SERVER
+    Q_UNUSED(password);
+    emitFakeRegisterResponse(username);
+    return;
+#endif
     QJsonObject data;
     data["username"] = username;
     data["password"] = password;
@@ -175,6 +214,10 @@ void NetworkManager::sendRegisterRequest(const QString& username, const QString&
 
 void NetworkManager::bookFlightRequest(int userId, int flightId)
 {
+#ifdef USE_FAKE_SERVER
+    emitFakeBookingResponse(userId, flightId);
+    return;
+#endif
     QJsonObject data;
     data["user_id"] = userId;
     data["flight_id"] = flightId;
@@ -188,6 +231,10 @@ void NetworkManager::bookFlightRequest(int userId, int flightId)
 
 void NetworkManager::getMyOrdersRequest(int userId)
 {
+#ifdef USE_FAKE_SERVER
+    emitFakeOrdersResponse(userId);
+    return;
+#endif
     QJsonObject data;
     data["user_id"] = userId;
 
@@ -200,6 +247,10 @@ void NetworkManager::getMyOrdersRequest(int userId)
 
 void NetworkManager::cancelOrderRequest(int bookingId)
 {
+#ifdef USE_FAKE_SERVER
+    emitFakeCancelResponse(bookingId);
+    return;
+#endif
     QJsonObject data;
     data["booking_id"] = bookingId;
 
@@ -209,3 +260,105 @@ void NetworkManager::cancelOrderRequest(int bookingId)
 
     sendJsonRequest(request);
 }
+
+#ifdef USE_FAKE_SERVER
+void NetworkManager::emitFakeLoginResponse(const QString& username)
+{
+    QJsonObject user;
+    user["user_id"] = 1;
+    user["username"] = username.isEmpty() ? QStringLiteral("demo_user") : username;
+    user["is_admin"] = 0;
+
+    QTimer::singleShot(100, this, [this, user]() {
+        emit loginSuccess(user);
+    });
+}
+
+void NetworkManager::emitFakeSearchResults(const QString& origin, const QString& dest, const QString& date)
+{
+    QJsonArray flights;
+
+    QJsonObject flight1;
+    flight1["flight_id"] = 101;
+    flight1["flight_number"] = QStringLiteral("CA101");
+    flight1["origin"] = origin.isEmpty() ? QStringLiteral("北京") : origin;
+    flight1["destination"] = dest.isEmpty() ? QStringLiteral("上海") : dest;
+    flight1["departure_time"] = date.isEmpty() ? QStringLiteral("2025-12-01T08:00:00") : date + "T08:00:00";
+    flight1["arrival_time"] = QStringLiteral("2025-12-01T10:15:00");
+    flight1["price"] = 850;
+    flight1["remaining_seats"] = 23;
+
+    QJsonObject flight2 = flight1;
+    flight2["flight_id"] = 102;
+    flight2["flight_number"] = QStringLiteral("MU233");
+    flight2["departure_time"] = date.isEmpty() ? QStringLiteral("2025-12-01T14:30:00") : date + "T14:30:00";
+    flight2["arrival_time"] = QStringLiteral("2025-12-01T17:05:00");
+    flight2["price"] = 920;
+    flight2["remaining_seats"] = 12;
+
+    flights.append(flight1);
+    flights.append(flight2);
+
+    QTimer::singleShot(150, this, [this, flights]() {
+        emit searchResults(flights);
+    });
+}
+
+void NetworkManager::emitFakeRegisterResponse(const QString& username)
+{
+    QString message = QStringLiteral("注册成功 (本地模拟) : %1")
+                          .arg(username.isEmpty() ? QStringLiteral("demo_user") : username);
+    QTimer::singleShot(120, this, [this, message]() {
+        emit registerSuccess(message);
+    });
+}
+
+void NetworkManager::emitFakeBookingResponse(int userId, int flightId)
+{
+    QJsonObject booking;
+    booking["booking_id"] = 500 + flightId;
+    booking["user_id"] = userId;
+    booking["flight_id"] = flightId;
+    booking["status"] = QStringLiteral("confirmed");
+
+    QTimer::singleShot(150, this, [this, booking]() {
+        emit bookingSuccess(booking);
+    });
+}
+
+void NetworkManager::emitFakeOrdersResponse(int userId)
+{
+    QJsonArray orders;
+
+    QJsonObject order1;
+    order1["booking_id"] = 700;
+    order1["flight_id"] = 101;
+    order1["status"] = QStringLiteral("confirmed");
+    order1["flight_number"] = QStringLiteral("CA101");
+    order1["origin"] = QStringLiteral("北京");
+    order1["destination"] = QStringLiteral("上海");
+    order1["departure_time"] = QStringLiteral("2025-12-01T08:00:00");
+    order1["user_id"] = userId;
+
+    QJsonObject order2 = order1;
+    order2["booking_id"] = 701;
+    order2["flight_id"] = 105;
+    order2["destination"] = QStringLiteral("深圳");
+    order2["departure_time"] = QStringLiteral("2025-12-05T19:20:00");
+
+    orders.append(order1);
+    orders.append(order2);
+
+    QTimer::singleShot(150, this, [this, orders]() {
+        emit myOrdersResult(orders);
+    });
+}
+
+void NetworkManager::emitFakeCancelResponse(int bookingId)
+{
+    QString message = QStringLiteral("订单 %1 已取消 (本地模拟)").arg(bookingId);
+    QTimer::singleShot(100, this, [this, message]() {
+        emit cancelOrderSuccess(message);
+    });
+}
+#endif // USE_FAKE_SERVER

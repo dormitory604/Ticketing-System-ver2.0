@@ -2,6 +2,18 @@
 	"entries" : 
 	[
 		{
+			"name" : "CLIENT_APP_USE_FAKE_SERVER",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Enable mock responses without a backend"
+				}
+			],
+			"type" : "BOOL",
+			"value" : "ON"
+		},
+		{
 			"name" : "CMAKE_ADDR2LINE",
 			"properties" : 
 			[

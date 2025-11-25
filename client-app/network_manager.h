@@ -68,6 +68,15 @@ private:
     QTcpSocket *m_socket;
 
     void sendJsonRequest(const QJsonObject& request);
+
+#ifdef USE_FAKE_SERVER
+    void emitFakeLoginResponse(const QString& username);
+    void emitFakeSearchResults(const QString& origin, const QString& dest, const QString& date);
+    void emitFakeRegisterResponse(const QString& username);
+    void emitFakeBookingResponse(int userId, int flightId);
+    void emitFakeOrdersResponse(int userId);
+    void emitFakeCancelResponse(int bookingId);
+#endif
 };
 
 #endif // NETWORKMANAGER_H

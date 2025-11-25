@@ -23,7 +23,8 @@
 			"include",
 			"find_package",
 			"find_dependency",
-			"_qt_internal_find_qt_dependencies"
+			"_qt_internal_find_qt_dependencies",
+			"target_compile_definitions"
 		],
 		"files" : 
 		[
@@ -53,7 +54,7 @@
 			{
 				"command" : 3,
 				"file" : 1,
-				"line" : 39,
+				"line" : 41,
 				"parent" : 0
 			},
 			{
@@ -77,13 +78,7 @@
 			{
 				"command" : 4,
 				"file" : 1,
-				"line" : 86,
-				"parent" : 0
-			},
-			{
-				"command" : 5,
-				"file" : 1,
-				"line" : 66,
+				"line" : 92,
 				"parent" : 0
 			},
 			{
@@ -93,9 +88,15 @@
 				"parent" : 0
 			},
 			{
+				"command" : 5,
+				"file" : 1,
+				"line" : 70,
+				"parent" : 0
+			},
+			{
 				"command" : 8,
 				"file" : 1,
-				"line" : 13,
+				"line" : 15,
 				"parent" : 0
 			},
 			{
@@ -307,6 +308,12 @@
 				"file" : 15,
 				"line" : 61,
 				"parent" : 46
+			},
+			{
+				"command" : 11,
+				"file" : 1,
+				"line" : 73,
+				"parent" : 0
 			}
 		]
 	},
@@ -348,6 +355,10 @@
 				{
 					"backtrace" : 24,
 					"define" : "UNICODE"
+				},
+				{
+					"backtrace" : 48,
+					"define" : "USE_FAKE_SERVER"
 				},
 				{
 					"backtrace" : 24,
@@ -433,11 +444,11 @@
 	"dependencies" : 
 	[
 		{
-			"id" : "client-app_autogen_timestamp_deps::@6890427a1f51a3e7e1df"
-		},
-		{
 			"backtrace" : 0,
 			"id" : "client-app_autogen::@6890427a1f51a3e7e1df"
+		},
+		{
+			"id" : "client-app_autogen_timestamp_deps::@6890427a1f51a3e7e1df"
 		}
 	],
 	"id" : "client-app::@6890427a1f51a3e7e1df",
