@@ -1,75 +1,112 @@
 #include "network_manager.h"
 
+#include <QTimer>
+
 NetworkManager::NetworkManager(QObject *parent) : QObject(parent)
 {
-    m_socket = new QTcpSocket(this);
+#ifdef USE_FAKE_SERVER
+    m_socket = nullptr;
+#else
+    m_socket = new QTcpSocket(this);
 
-    // 绑定 QtSocket 的内置信号到我们自己的槽
-    connect(m_socket, &QTcpSocket::connected, this, &NetworkManager::onConnected);
-    connect(m_socket, &QTcpSocket::disconnected, this, &NetworkManager::onDisconnected);
-    connect(m_socket, &QTcpSocket::readyRead, this, &NetworkManager::onReadyRead);
-    connect(m_socket, &QAbstractSocket::errorOccurred, this, &NetworkManager::onError);
+    // 绑定 QtSocket 的内置信号到我们自己的槽
+    connect(m_socket, &QTcpSocket::connected, this, &NetworkManager::onConnected);
+    connect(m_socket, &QTcpSocket::disconnected, this, &NetworkManager::onDisconnected);
+    connect(m_socket, &QTcpSocket::readyRead, this, &NetworkManager::onReadyRead);
+    connect(m_socket, &QAbstractSocket::errorOccurred, this, &NetworkManager::onError);
+#endif
 }
 
 NetworkManager::~NetworkManager() {}
 
 void NetworkManager::connectToServer(const QString& host, quint16 port)
 {
-    qInfo() << "连接到服务器..." << host << ":" << port;
-    m_socket->connectToHost(host, port);
+#ifdef USE_FAKE_SERVER
+    Q_UNUSED(host);
+    Q_UNUSED(port);
+    qInfo() << "[FAKE SERVER] 跳过真实服务器连接";
+    QTimer::singleShot(0, this, [this]() {
+        emit connected();
+    });
+#else
+    qInfo() << "连接到服务器..." << host << ":" << port;
+    m_socket->connectToHost(host, port);
+#endif
 }
 
 // 当收到服务器数据时 (JSON解析)
+#ifndef USE_FAKE_SERVER
 void NetworkManager::onReadyRead()
 {
-    QByteArray data = m_socket->readAll();
-    qDebug() << "收到服务器响应:" << data;
+    QByteArray data = m_socket->readAll();
+    qDebug() << "收到服务器响应:" << data;
 
-    QJsonDocument jsonDoc = QJsonDocument::fromJson(data);
-    if (jsonDoc.isNull() || !jsonDoc.isObject()) {
-        qWarning() << "收到无效的JSON响应 (非JSON)";
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(data);
+    if (jsonDoc.isNull() || !jsonDoc.isObject()) {
+        qWarning() << "收到无效的JSON响应 (非JSON)";
         emit generalError("收到无效的服务器响应 (非JSON)");
-        return;
-    }
+        return;
+    }
 
-    QJsonObject response = jsonDoc.object();
-    QString status = response["status"].toString();
-    QString message = response["message"].toString();
+    QJsonObject response = jsonDoc.object();
+    QString status = response["status"].toString();
+    QString message = response["message"].toString();
 
     QString action = response["action_response"].toString();
 
-    // 路由 "失败" 响应
-    if (status == "error") {
-        qWarning() << "服务器返回错误:" << message << " (Action: " << action << ")";
+    // 路由 "失败" 响应
+    if (status == "error") {
+        qWarning() << "服务器返回错误:" << message << " (Action: " << action << ")";
 
-        // 现在我们可以根据 action 路由到特定的错误信号
         if (action == "login") {
-            emit loginFailed(message); // 发出特定的 "登录失败" 信号
+            emit loginFailed(message);
         }
-        // else if (action == "search_flights") {
-        //     emit searchFailed(message); // 后续要添加这个信号
+        else if (action == "search_flights") {
+            emit generalError(message);
+        }
+        else if (action == "register") {
+            emit registerFailed(message);
+        }
+        else if (action == "book_flight") {
+            emit bookingFailed(message);
+        }
+        else if (action == "get_my_orders") {
+            emit generalError(message);
+        }
+        else if (action == "cancel_order") {
+            emit cancelOrderFailed(message);
+        }
         else {
-            // 对于所有其他错误，或 action 未知的错误，发通用错误
-            emit generalError(message);
+            emit generalError(message);
         }
-        return;
-    }
+        return;
+    }
 
-    // 路由 "成功" 响应
-    // action字段一定不能为空！
-    if (action.isEmpty()) {
-        return;
-    }
+    // 路由 "成功" 响应
+    // action字段一定不能为空！
+    if (action.isEmpty()) {
+        return;
+    }
 
     // 开始路由
-    if (action == "login") {
-        // 登录响应
-        emit loginSuccess(response["data"].toObject());
-    }
-    else if (action == "search_flights") {
-        // 航班查询响应
-        emit searchResults(response["data"].toArray());
-    }
+    if (action == "login") {
+        emit loginSuccess(response["data"].toObject());
+    }
+    else if (action == "search_flights") {
+        emit searchResults(response["data"].toArray());
+    }
+    else if (action == "register") {
+        emit registerSuccess(message);
+    }
+    else if (action == "book_flight") {
+        emit bookingSuccess(response["data"].toObject());
+    }
+    else if (action == "get_my_orders") {
+        emit myOrdersResult(response["data"].toArray());
+    }
+    else if (action == "cancel_order") {
+        emit cancelOrderSuccess(message);
+    }
     /*
     else if (action == "admin_add_flight") {
         emit adminOpSuccess(message);
@@ -80,33 +117,42 @@ void NetworkManager::onReadyRead()
         qWarning() << "收到未知的成功响应 action: " << action;
     }
 }
+#else
+void NetworkManager::onReadyRead() {}
+#endif
 
 void NetworkManager::onConnected() {
-    qInfo() << "已连接到服务器!";
-    emit connected();
+    qInfo() << "已连接到服务器!";
+    emit connected();
 }
 void NetworkManager::onDisconnected() {
-    qWarning() << "与服务器断开连接";
-    emit disconnected();
+    qWarning() << "与服务器断开连接";
+    emit disconnected();
 }
 void NetworkManager::onError(QAbstractSocket::SocketError socketError) {
     // 这个 onError 主要处理底层的TCP错误 (比如连不上服务器)
-    qCritical() << "网络底层错误:" << m_socket->errorString();
-    emit generalError(m_socket->errorString());
+    qCritical() << "网络底层错误:" << m_socket->errorString();
+    emit generalError(m_socket->errorString());
 }
 
 // 发送JSON的通用函
 void NetworkManager::sendJsonRequest(const QJsonObject& request)
 {
-    if (m_socket->state() != QAbstractSocket::ConnectedState) {
-        qWarning() << "未连接到服务器，无法发送消息";
-        emit generalError("未连接到服务器");
-        return;
-    }
+#ifdef USE_FAKE_SERVER
+    Q_UNUSED(request);
+    qWarning() << "[FAKE SERVER] sendJsonRequest 被调用，但当前为本地模拟模式";
+    return;
+#else
+    if (m_socket->state() != QAbstractSocket::ConnectedState) {
+        qWarning() << "未连接到服务器，无法发送消息";
+        emit generalError("未连接到服务器");
+        return;
+    }
 
-    QJsonDocument doc(request);
-    m_socket->write(doc.toJson());
-  D qDebug() << "发送JSON请求:" << request;
+    QJsonDocument doc(request);
+    m_socket->write(doc.toJson());
+    qDebug() << "发送JSON请求:" << request;
+#endif
 }
 
 
@@ -114,27 +160,205 @@ void NetworkManager::sendJsonRequest(const QJsonObject& request)
 
 void NetworkManager::sendLoginRequest(const QString& username, const QString& password)
 {
-    QJsonObject data;
-    data["username"] = username;
-    data["password"] = password;
+#ifdef USE_FAKE_SERVER
+    Q_UNUSED(password);
+    emitFakeLoginResponse(username);
+    return;
+#endif
+    QJsonObject data;
+    data["username"] = username;
+    data["password"] = password;
 
-    QJsonObject request;
-    request["action"] = "login";
-    request["data"] = data;
+    QJsonObject request;
+    request["action"] = "login";
+    request["data"] = data;
 
-    sendJsonRequest(request);
+    sendJsonRequest(request);
 }
 
 void NetworkManager::sendSearchRequest(const QString& origin, const QString& dest, const QString& date)
 {
-    QJsonObject data;
-    if (!origin.isEmpty()) data["origin"] = origin;
-    if (!dest.isEmpty()) data["destination"] = dest;
-    if (!date.isEmpty()) data["date"] = date;
+#ifdef USE_FAKE_SERVER
+    emitFakeSearchResults(origin, dest, date);
+    return;
+#endif
+    QJsonObject data;
+    if (!origin.isEmpty()) data["origin"] = origin;
+    if (!dest.isEmpty()) data["destination"] = dest;
+    if (!date.isEmpty()) data["date"] = date;
 
-    QJsonObject request;
-    request["action"] = "search_flights";
-    request["data"] = data;
+    QJsonObject request;
+    request["action"] = "search_flights";
+    request["data"] = data;
 
-    sendJsonRequest(request);
+    sendJsonRequest(request);
 }
+
+void NetworkManager::sendRegisterRequest(const QString& username, const QString& password)
+{
+#ifdef USE_FAKE_SERVER
+    Q_UNUSED(password);
+    emitFakeRegisterResponse(username);
+    return;
+#endif
+    QJsonObject data;
+    data["username"] = username;
+    data["password"] = password;
+
+    QJsonObject request;
+    request["action"] = "register";
+    request["data"] = data;
+
+    sendJsonRequest(request);
+}
+
+void NetworkManager::bookFlightRequest(int userId, int flightId)
+{
+#ifdef USE_FAKE_SERVER
+    emitFakeBookingResponse(userId, flightId);
+    return;
+#endif
+    QJsonObject data;
+    data["user_id"] = userId;
+    data["flight_id"] = flightId;
+
+    QJsonObject request;
+    request["action"] = "book_flight";
+    request["data"] = data;
+
+    sendJsonRequest(request);
+}
+
+void NetworkManager::getMyOrdersRequest(int userId)
+{
+#ifdef USE_FAKE_SERVER
+    emitFakeOrdersResponse(userId);
+    return;
+#endif
+    QJsonObject data;
+    data["user_id"] = userId;
+
+    QJsonObject request;
+    request["action"] = "get_my_orders";
+    request["data"] = data;
+
+    sendJsonRequest(request);
+}
+
+void NetworkManager::cancelOrderRequest(int bookingId)
+{
+#ifdef USE_FAKE_SERVER
+    emitFakeCancelResponse(bookingId);
+    return;
+#endif
+    QJsonObject data;
+    data["booking_id"] = bookingId;
+
+    QJsonObject request;
+    request["action"] = "cancel_order";
+    request["data"] = data;
+
+    sendJsonRequest(request);
+}
+
+#ifdef USE_FAKE_SERVER
+void NetworkManager::emitFakeLoginResponse(const QString& username)
+{
+    QJsonObject user;
+    user["user_id"] = 1;
+    user["username"] = username.isEmpty() ? QStringLiteral("demo_user") : username;
+    user["is_admin"] = 0;
+
+    QTimer::singleShot(100, this, [this, user]() {
+        emit loginSuccess(user);
+    });
+}
+
+void NetworkManager::emitFakeSearchResults(const QString& origin, const QString& dest, const QString& date)
+{
+    QJsonArray flights;
+
+    QJsonObject flight1;
+    flight1["flight_id"] = 101;
+    flight1["flight_number"] = QStringLiteral("CA101");
+    flight1["origin"] = origin.isEmpty() ? QStringLiteral("北京") : origin;
+    flight1["destination"] = dest.isEmpty() ? QStringLiteral("上海") : dest;
+    flight1["departure_time"] = date.isEmpty() ? QStringLiteral("2025-12-01T08:00:00") : date + "T08:00:00";
+    flight1["arrival_time"] = QStringLiteral("2025-12-01T10:15:00");
+    flight1["price"] = 850;
+    flight1["remaining_seats"] = 23;
+
+    QJsonObject flight2 = flight1;
+    flight2["flight_id"] = 102;
+    flight2["flight_number"] = QStringLiteral("MU233");
+    flight2["departure_time"] = date.isEmpty() ? QStringLiteral("2025-12-01T14:30:00") : date + "T14:30:00";
+    flight2["arrival_time"] = QStringLiteral("2025-12-01T17:05:00");
+    flight2["price"] = 920;
+    flight2["remaining_seats"] = 12;
+
+    flights.append(flight1);
+    flights.append(flight2);
+
+    QTimer::singleShot(150, this, [this, flights]() {
+        emit searchResults(flights);
+    });
+}
+
+void NetworkManager::emitFakeRegisterResponse(const QString& username)
+{
+    QString message = QStringLiteral("注册成功 (本地模拟) : %1")
+                          .arg(username.isEmpty() ? QStringLiteral("demo_user") : username);
+    QTimer::singleShot(120, this, [this, message]() {
+        emit registerSuccess(message);
+    });
+}
+
+void NetworkManager::emitFakeBookingResponse(int userId, int flightId)
+{
+    QJsonObject booking;
+    booking["booking_id"] = 500 + flightId;
+    booking["user_id"] = userId;
+    booking["flight_id"] = flightId;
+    booking["status"] = QStringLiteral("confirmed");
+
+    QTimer::singleShot(150, this, [this, booking]() {
+        emit bookingSuccess(booking);
+    });
+}
+
+void NetworkManager::emitFakeOrdersResponse(int userId)
+{
+    QJsonArray orders;
+
+    QJsonObject order1;
+    order1["booking_id"] = 700;
+    order1["flight_id"] = 101;
+    order1["status"] = QStringLiteral("confirmed");
+    order1["flight_number"] = QStringLiteral("CA101");
+    order1["origin"] = QStringLiteral("北京");
+    order1["destination"] = QStringLiteral("上海");
+    order1["departure_time"] = QStringLiteral("2025-12-01T08:00:00");
+    order1["user_id"] = userId;
+
+    QJsonObject order2 = order1;
+    order2["booking_id"] = 701;
+    order2["flight_id"] = 105;
+    order2["destination"] = QStringLiteral("深圳");
+    order2["departure_time"] = QStringLiteral("2025-12-05T19:20:00");
+
+    orders.append(order1);
+    orders.append(order2);
+
+    QTimer::singleShot(150, this, [this, orders]() {
+        emit myOrdersResult(orders);
+    });
+}
+
+void NetworkManager::emitFakeCancelResponse(int bookingId)
+{
+    QString message = QStringLiteral("订单 %1 已取消 (本地模拟)").arg(bookingId);
+    QTimer::singleShot(100, this, [this, message]() {
+        emit cancelOrderSuccess(message);
+    });
+}
+#endif // USE_FAKE_SERVER
