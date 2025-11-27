@@ -43,24 +43,79 @@ void TcpServer::onReadyRead()
     QJsonDocument jsonDoc = QJsonDocument::fromJson(receivedData);
     if (jsonDoc.isNull() || !jsonDoc.isObject()) {
         qWarning() << "收到无效的JSON格式";
-        // (这里也可以发送一个错误JSON回去)
-        return; // TO DO
+
+        // 返回错误消息
+        QJsonObject error;
+        error["status"] = "error";
+        error["message"] = "Invalid JSON format";
+        sendJsonResponse(socket, error);
+
+        return;
     }
 
     QJsonObject request = jsonDoc.object();
     qDebug() << "解析JSON请求:" << request;
 
-    QJsonObject response = handleRequest(request);
+    // 首次解析tag
+    if (clients[socket].tag.isEmpty())
+    {
+        if (!request.contains("tag") || !request["tag"].isString()) {
 
+            QJsonObject error;
+            error["status"] = "error";
+            error["message"] = "Missing or invalid tag";
+
+            sendJsonResponse(socket, error);
+            socket->disconnectFromHost();
+            return;
+        }
+
+        QString tag = request["tag"].toString();
+
+        // 检查 tag 是否重复
+        for (auto it = clients.begin(); it != clients.end(); ++it) {
+            if (it.value().tag == tag && it.key() != socket) {
+
+                QJsonObject error;
+                error["status"] = "error";
+                error["message"] = "Tag already in use";
+
+                sendJsonResponse(socket, error);
+                socket->disconnectFromHost();
+                return;
+            }
+        }
+
+        // 绑定 tag
+        clients[socket].tag = tag;
+        qInfo() << "客户端注册tag成功:" << tag;
+
+        // 回复注册成功
+        QJsonObject success;
+        success["status"] = "success";
+        success["message"] = "Tag registered";
+        sendJsonResponse(socket, success);
+
+        return;
+    }
+
+    // 解析正常业务
+    QJsonObject response = handleRequest(request);
     sendJsonResponse(socket, response);
 }
 
 // 当客户端断开连接时
 void TcpServer::onDisconnected()
 {
-    QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
-    qInfo() << "客户端断开连接:" << socket->peerAddress().toString();
-    socket->deleteLater(); // 这里不能马上删除
+    QTcpSocket* socket = qobject_cast<QTcpSocket*>(sender());
+    if (!socket) return;
+
+    if (clients.contains(socket)) {
+        qInfo() << "客户端断开连接: " << clients[socket].tag;
+        clients.remove(socket);
+    }
+
+    socket->deleteLater();
 }
 
 // 用来发送JSON响应的辅助函数，此处返回的是QByteArray
@@ -72,7 +127,7 @@ void TcpServer::sendJsonResponse(QTcpSocket* socket, const QJsonObject& response
     qDebug() << "发送JSON响应:" << response;
 }
 
-/// 以下为服务器具体需求功能实现
+/// 以下为服务器具体业务需求功能实现
 
 // 请求分发路由器
 QJsonObject TcpServer::handleRequest(const QJsonObject& request)
