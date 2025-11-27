@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.16)
 
 project(client-app VERSION 0.1 LANGUAGES CXX)
 
+option(CLIENT_APP_USE_FAKE_SERVER "Enable mock responses without a backend" OFF)
+
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -10,8 +12,13 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools Network)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Network)
+
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS 
+    Core 
+    Network 
+    Widgets 
+    LinguistTools
+)
 
 set(TS_FILES client-app_en_US.ts)
 
@@ -20,7 +27,19 @@ set(PROJECT_SOURCES
         mainwindow.cpp
         mainwindow.h
         mainwindow.ui
-        ${TS_FILES}
+        network_manager.cpp
+        network_manager.h
+        app_session.cpp
+        app_session.h
+        register_window.cpp
+        register_window.h
+        register_window.ui
+        search_window.cpp
+        search_window.h
+        search_window.ui
+        myorders_window.cpp
+        myorders_window.h
+        myorders_window.ui
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -55,6 +74,9 @@ target_link_libraries(client-app PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(client-app PRIVATE Qt${QT_VERSION_MAJOR}::Core)
 target_link_libraries(client-app PRIVATE Qt${QT_VERSION_MAJOR}::Network)
 
+if(CLIENT_APP_USE_FAKE_SERVER)
+    target_compile_definitions(client-app PRIVATE USE_FAKE_SERVER)
+endif()
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

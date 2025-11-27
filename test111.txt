@@ -1,0 +1,14 @@
+测试一下
+1.怎么创建分支 git checkout -b 分支名
+2.切换分支 git switch main / git switch admin-app
+3.查看状态 git status
+4.git add . / git commit -m "修改信息"
+5.提交到GitHub git push origin 分支名
+
+1.git checkout main (先回主基地)
+2.git pull (把主基地更新到最新)
+3.git checkout -b 分支名 (开个新副本)
+4.(去写代码，保存文件)
+5.git add . (装车)
+6.git commit -m "写了啥" (出库单)
+7.git push origin 分支名 (发货到云端)
