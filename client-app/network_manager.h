@@ -31,6 +31,7 @@ public:
     void bookFlightRequest(int userId, int flightId);
     void getMyOrdersRequest(int userId);
     void cancelOrderRequest(int bookingId);
+    void updateProfileRequest(int userId, const QString& username, const QString& password);
     // ... (注意，每个action都对应一个发送函数，如果后续要新增这里也要加)
 
 signals:
@@ -48,6 +49,8 @@ signals:
     void myOrdersResult(const QJsonArray& orders);
     void cancelOrderSuccess(const QString& message);
     void cancelOrderFailed(const QString& message);
+    void profileUpdateSuccess(const QString& message, const QJsonObject& userData);
+    void profileUpdateFailed(const QString& message);
     // ... (如果后续要加加在这里)
     void generalError(const QString& message);
 
@@ -76,6 +79,7 @@ private:
     void emitFakeBookingResponse(int userId, int flightId);
     void emitFakeOrdersResponse(int userId);
     void emitFakeCancelResponse(int bookingId);
+    void emitFakeProfileUpdateResponse(int userId, const QString& username);
 #endif
 };
 

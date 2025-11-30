@@ -449,6 +449,12 @@
 			null
 		],
 		[
+			"D:/QTlearn/Ticketing-System-ver2-0/client-app/profile_window.h",
+			"MU",
+			"EWIEGA46WW/moc_profile_window.cpp",
+			null
+		],
+		[
 			"D:/QTlearn/Ticketing-System-ver2-0/client-app/register_window.h",
 			"MU",
 			"EWIEGA46WW/moc_register_window.cpp",
@@ -553,6 +559,11 @@
 		],
 		[
 			"D:/QTlearn/Ticketing-System-ver2-0/client-app/network_manager.cpp",
+			"MU",
+			null
+		],
+		[
+			"D:/QTlearn/Ticketing-System-ver2-0/client-app/profile_window.cpp",
 			"MU",
 			null
 		],

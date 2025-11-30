@@ -76,6 +76,9 @@ void NetworkManager::onReadyRead()
         else if (action == "cancel_order") {
             emit cancelOrderFailed(message);
         }
+        else if (action == "update_profile") {
+            emit profileUpdateFailed(message);
+        }
         else {
             emit generalError(message);
         }
@@ -106,6 +109,9 @@ void NetworkManager::onReadyRead()
     }
     else if (action == "cancel_order") {
         emit cancelOrderSuccess(message);
+    }
+    else if (action == "update_profile") {
+        emit profileUpdateSuccess(message, response["data"].toObject());
     }
     /*
     else if (action == "admin_add_flight") {
@@ -171,6 +177,25 @@ void NetworkManager::sendLoginRequest(const QString& username, const QString& pa
 
     QJsonObject request;
     request["action"] = "login";
+    request["data"] = data;
+
+    sendJsonRequest(request);
+}
+
+void NetworkManager::updateProfileRequest(int userId, const QString &username, const QString &password)
+{
+#ifdef USE_FAKE_SERVER
+    emitFakeProfileUpdateResponse(userId, username);
+    Q_UNUSED(password);
+    return;
+#endif
+    QJsonObject data;
+    data["user_id"] = userId;
+    data["username"] = username;
+    data["password"] = password;
+
+    QJsonObject request;
+    request["action"] = "update_profile";
     request["data"] = data;
 
     sendJsonRequest(request);
@@ -359,6 +384,19 @@ void NetworkManager::emitFakeCancelResponse(int bookingId)
     QString message = QStringLiteral("订单 %1 已取消 (本地模拟)").arg(bookingId);
     QTimer::singleShot(100, this, [this, message]() {
         emit cancelOrderSuccess(message);
+    });
+}
+
+void NetworkManager::emitFakeProfileUpdateResponse(int userId, const QString &username)
+{
+    QJsonObject user;
+    user["user_id"] = userId <= 0 ? 1 : userId;
+    user["username"] = username.isEmpty() ? QStringLiteral("demo_user") : username;
+    user["is_admin"] = 0;
+
+    QString message = QStringLiteral("个人信息已更新 (本地模拟)");
+    QTimer::singleShot(120, this, [this, message, user]() {
+        emit profileUpdateSuccess(message, user);
     });
 }
 #endif // USE_FAKE_SERVER

@@ -4,6 +4,7 @@
 #include "network_manager.h"
 #include "app_session.h"
 #include "myorders_window.h"
+#include "profile_window.h"
 
 #include <QMessageBox>
 #include <QDate>
@@ -14,6 +15,7 @@ SearchWindow::SearchWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::SearchWindow)
     , m_ordersWindow(nullptr)
+    , m_profileWindow(nullptr)
 {
     ui->setupUi(this);
     ui->dateEdit->setDate(QDate::currentDate());
@@ -38,6 +40,9 @@ SearchWindow::~SearchWindow()
 {
     if (m_ordersWindow) {
         m_ordersWindow->deleteLater();
+    }
+    if (m_profileWindow) {
+        m_profileWindow->deleteLater();
     }
     delete ui;
 }
@@ -84,6 +89,16 @@ void SearchWindow::on_myOrdersButton_clicked()
     m_ordersWindow->show();
     m_ordersWindow->raise();
     m_ordersWindow->activateWindow();
+}
+
+void SearchWindow::on_profileButton_clicked()
+{
+    if (!m_profileWindow) {
+        m_profileWindow = new ProfileWindow(this);
+    }
+    m_profileWindow->show();
+    m_profileWindow->raise();
+    m_profileWindow->activateWindow();
 }
 
 void SearchWindow::handleSearchResults(const QJsonArray &flights)

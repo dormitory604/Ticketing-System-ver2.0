@@ -103,6 +103,7 @@ set(OLD_GLOB
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/mainwindow.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/myorders_window.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/network_manager.cpp"
+  "D:/QTlearn/Ticketing-System-ver2-0/client-app/profile_window.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/register_window.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/search_window.cpp"
   )
@@ -188,6 +189,7 @@ set(OLD_GLOB
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/mainwindow.h"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/myorders_window.h"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/network_manager.h"
+  "D:/QTlearn/Ticketing-System-ver2-0/client-app/profile_window.h"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/register_window.h"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/search_window.h"
   )
@@ -573,6 +575,7 @@ file(GLOB_RECURSE NEW_GLOB LIST_DIRECTORIES false "D:/QTlearn/Ticketing-System-v
 set(OLD_GLOB
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/mainwindow.ui"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/myorders_window.ui"
+  "D:/QTlearn/Ticketing-System-ver2-0/client-app/profile_window.ui"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/register_window.ui"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/search_window.ui"
   )

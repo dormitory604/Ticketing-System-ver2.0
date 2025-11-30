@@ -49,6 +49,17 @@
      - 订阅 `myOrdersResult` 更新表格；对 `cancelOrderSuccess/cancelOrderFailed` 做 UI 提示并在成功后刷新。
      - 选中表格行后调用 `cancelOrderRequest`。
 
+7. **个人主页 & 资料修改**
+   - 新增 `profile_window.h/.cpp/.ui`：
+     - 窗口展示当前用户 ID / 用户名，允许输入新的用户名与密码并执行表单校验（空值、长度、确认密码一致）。
+     - `AppSession` 的 `userChanged` 信号与窗口联动，保持多窗数据同步；提交后根据结果更新提示及输入状态。
+   - `search_window.ui/.cpp/.h`：
+     - 新增“个人主页”按钮，并在 `SearchWindow` 中懒加载 `ProfileWindow` 以便登录后随时修改资料。
+   - `network_manager.h/.cpp`：
+     - 保持原有接口不动，新增 `updateProfileRequest` 发送函数与 `profileUpdateSuccess/profileUpdateFailed` 信号；在 `onReadyRead()` 中路由 `update_profile` 成功/失败响应。
+     - FAKE_SERVER 模式补充 `emitFakeProfileUpdateResponse`，便于离线验证个人主页流程。
+   - `client-app/CMakeLists.txt`：将 `profile_window` 三件套加入 `PROJECT_SOURCES`，确保构建。
+
 ## 后续可选工作
 1. 根据最终 UI 设计补充 `search_window.ui`、`myorders_window.ui` 的布局细节与样式。
 2. 与服务器端约定响应字段后，进一步完善表格列（例如价格格式、状态枚举颜色）。

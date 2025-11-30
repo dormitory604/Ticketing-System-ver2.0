@@ -3,5 +3,6 @@
 #include "EWIEGA46WW/moc_mainwindow.cpp"
 #include "EWIEGA46WW/moc_myorders_window.cpp"
 #include "EWIEGA46WW/moc_network_manager.cpp"
+#include "EWIEGA46WW/moc_profile_window.cpp"
 #include "EWIEGA46WW/moc_register_window.cpp"
 #include "EWIEGA46WW/moc_search_window.cpp"

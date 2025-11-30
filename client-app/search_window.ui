@@ -129,6 +129,13 @@
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="profileButton">
+        <property name="text">
+         <string>个人主页</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <spacer name="horizontalSpacer_2">
         <property name="orientation">
          <enum>Qt::Orientation::Horizontal</enum>

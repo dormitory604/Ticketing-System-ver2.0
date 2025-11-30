@@ -5,6 +5,7 @@
 #include <QJsonArray>
 
 class MyOrdersWindow;
+class ProfileWindow;
 
 namespace Ui {
 class SearchWindow;
@@ -25,6 +26,7 @@ private slots:
     void on_searchButton_clicked();
     void on_bookButton_clicked();
     void on_myOrdersButton_clicked();
+    void on_profileButton_clicked();
 
     void handleSearchResults(const QJsonArray& flights);
     void handleBookingSuccess(const QJsonObject& bookingData);
@@ -39,6 +41,7 @@ private:
     Ui::SearchWindow *ui;
     QJsonArray m_latestFlights;
     MyOrdersWindow *m_ordersWindow;
+    ProfileWindow *m_profileWindow;
 };
 
 #endif // SEARCH_WINDOW_H
