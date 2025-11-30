@@ -23,37 +23,42 @@ public:
     bool isConnected() const;  // 查看是否与服务器连接
 
     // 发送接口(C2S)
-    // 1. 登录(对应 handleLogin)
+    // 登录(对应server-app中的handleLogin)
     void sendAdminLoginRequest(const QString& username, const QString& password);
 
-    // 2. 获取所有航班 (对应 handleSearchFlights，管理员查所有票可以传空参数)
+    // 航班查询(对应server-app中的handleSearchFlights)
     void sendGetAllFlightsRequest();
 
-    // 3. 添加航班 (对应 handleAdminAddFlight)
+    // 项目接口文档3.3中的5个管理员接口
+    // 添加航班(对应server-app与管理员接口handleAdminAddFlight)
     void sendAdminAddFlightRequest(const QJsonObject& flightData);
 
-    // 4. 获取所有用户 (对应 handleAdminGetAllUsers)
+    // 修改航班(对应server-app与管理员接口handleAdminUpdateFlight)
+    void sendAdminUpdateFlightRequest(int flightId, const QJsonObject& changes);
+
+    // 删除航班(对应server-app与管理员接口handleAdminDeleteFlight)
+    void sendAdminDeleteFlightRequest(int flightId);
+
+    // 获取所有用户(对应server-app与管理员接口handleAdminGetAllUsers)
     void sendAdminGetAllUsersRequest();
 
-    // 5. 获取所有订单 (对应 handleAdminGetAllBookings)
+    // 获取所有订单(对应server-app与管理员接口handleAdminGetAllBookings)
     void sendAdminGetAllBookingsRequest();
 
-    // 6. 删除航班 (对应 handleAdminDeleteFlight)
-    void sendAdminDeleteFlightRequest(int flightId);
 
 signals:
     // --- 接收信号 (S2C) ---
 
-    // 登录结果: isSuccess, isAdmin, message
+    // 登录结果: success判断登录是否成功, isAdmin判断登录的账号是不是管理员, message打印登陆失败的信息
     void loginResult(bool success, bool isAdmin, const QString& message);
 
-    // 收到航班列表 (用于刷新航班管理表格)
+    // 收到航班列表(用于刷新航班管理表格)
     void allFlightsReceived(const QJsonArray& flights);
 
-    // 收到用户列表 (用于刷新用户管理表格)
+    // 收到用户列表(用于刷新用户管理表格)
     void allUsersReceived(const QJsonArray& users);
 
-    // 收到订单列表 (用于刷新订单管理表格)
+    // 收到订单列表(用于刷新订单管理表格)
     void allBookingsReceived(const QJsonArray& bookings);
 
     // 通用操作成功/失败信号 (用于 添加/删除/修改 后的弹窗提示)
@@ -72,7 +77,7 @@ private:
     void send(const QJsonObject& json);
 
 private slots:
-    void onReadyRead();      // 核心：处理服务器回信
+    void onReadyRead();      // 处理服务器回信
     void onConnected();
     void onDisconnected();
 };
