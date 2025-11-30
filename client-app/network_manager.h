@@ -27,6 +27,10 @@ public:
     // 这是给UI界面调用的 (例如: on_loginButton_clicked)
     void sendLoginRequest(const QString& username, const QString& password);
     void sendSearchRequest(const QString& origin, const QString& dest, const QString& date);
+    void sendRegisterRequest(const QString& username, const QString& password);
+    void bookFlightRequest(int userId, int flightId);
+    void getMyOrdersRequest(int userId);
+    void cancelOrderRequest(int bookingId);
     // ... (注意，每个action都对应一个发送函数，如果后续要新增这里也要加)
 
 signals:
@@ -37,6 +41,13 @@ signals:
     void loginSuccess(const QJsonObject& userData);
     void loginFailed(const QString& message);
     void searchResults(const QJsonArray& flights);
+    void registerSuccess(const QString& message);
+    void registerFailed(const QString& message);
+    void bookingSuccess(const QJsonObject& bookingData);
+    void bookingFailed(const QString& message);
+    void myOrdersResult(const QJsonArray& orders);
+    void cancelOrderSuccess(const QString& message);
+    void cancelOrderFailed(const QString& message);
     // ... (如果后续要加加在这里)
     void generalError(const QString& message);
 
@@ -57,6 +68,15 @@ private:
     QTcpSocket *m_socket;
 
     void sendJsonRequest(const QJsonObject& request);
+
+#ifdef USE_FAKE_SERVER
+    void emitFakeLoginResponse(const QString& username);
+    void emitFakeSearchResults(const QString& origin, const QString& dest, const QString& date);
+    void emitFakeRegisterResponse(const QString& username);
+    void emitFakeBookingResponse(int userId, int flightId);
+    void emitFakeOrdersResponse(int userId);
+    void emitFakeCancelResponse(int bookingId);
+#endif
 };
 
 #endif // NETWORKMANAGER_H
