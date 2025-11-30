@@ -18,16 +18,16 @@ public:
     ~AdminDashboard();
 
 private slots:
-    // --- 按钮点击事件 (Qt会自动连接这些符合命名规范的函数) ---
-    void on_btnAddFlight_clicked();    // 点击添加
-    void on_btnDeleteFlight_clicked(); // 点击删除
-    void on_btnEditFlight_clicked();   // 点击修改
-    void on_btnRefresh_clicked();      // 点击刷新
+    // admin_dashboard.ui中的按钮
+    void on_btnAddFlight_clicked();  // 点击添加
+    void on_btnDeleteFlight_clicked();  // 点击删除
+    void on_btnEditFlight_clicked();  // 点击修改
+    void on_btnRefresh_clicked();  // 点击刷新
 
-    // --- NetworkManager 信号接收槽 ---
-    void updateFlightTable(const QJsonArray &flights); // 填航班表
-    void updateUserTable(const QJsonArray &users);     // 填用户表
-    void updateBookingTable(const QJsonArray &bookings);// 填订单表
+    // NetworkManager信号接收槽
+    void updateFlightTable(const QJsonArray &flights);  // 填航班表
+    void updateUserTable(const QJsonArray &users);  // 填用户表
+    void updateBookingTable(const QJsonArray &bookings);  // 填订单表
 
     // 处理操作成功/失败的弹窗
     void handleOperationSuccess(const QString &msg);

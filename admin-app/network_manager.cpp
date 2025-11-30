@@ -1,5 +1,6 @@
 #include "network_manager.h"
 #include <QDebug>
+#include <QRandomGenerator>
 
 // 构造函数
 NetworkManager::NetworkManager(QObject *parent) : QObject(parent)
@@ -46,6 +47,20 @@ bool NetworkManager::isConnected() const
 void NetworkManager::onConnected()
 {
     qDebug() << "Server connection successful！";
+
+    // 连接成功，立刻发送身份注册包
+    QJsonObject identity;
+    // 生成一个随机后缀，防止tag重复
+    QString uniqueTag = "admin_" + QString::number(QRandomGenerator::global()->bounded(1000, 9999));
+
+    identity["tag"] = uniqueTag;
+
+    // socket发送
+    QJsonDocument doc(identity);
+    m_socket->write(doc.toJson(QJsonDocument::Compact));
+    m_socket->flush();
+
+    qDebug() << "C2S 发送身份认证:" << identity;
 }
 
 // 打印断开连接

@@ -23,15 +23,15 @@ set(PROJECT_SOURCES
         admin_login_window.ui
         network_manager.h
         network_manager.cpp
+        flightdialog.cpp
+        flightdialog.h
+        flightdialog.ui
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(admin-app
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-        admin_login_window.h admin_login_window.cpp admin_login_window.ui
-        network_manager.h network_manager.cpp
-
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET admin-app APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR

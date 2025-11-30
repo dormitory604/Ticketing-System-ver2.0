@@ -47,18 +47,18 @@
 - [x] **文件创建**
     - [x] 创建 `admin_dashboard.h`, `admin_dashboard.cpp`, `admin_dashboard.ui`。
 
-- [ ] **界面设计 (UI)**
-    - [ ] 使用 `QTabWidget` 分为3个标签页。
+- [x] **界面设计 (UI)**
+    - [x] 使用 `QTabWidget` 分为3个标签页。
 
-- [ ] **标签页 1: 航班管理**
-    - [ ] 放置表格 `QTableWidget`。
-    - [ ] 设置3个按钮：**添加**、**删除**、**修改**。
-    - [ ] 逻辑：调用 `NetworkManager` 获取数据并填进表格。
+- [x] **标签页 1: 航班管理**
+    - [x] 放置表格 `QTableWidget`。
+    - [x] 设置3个按钮：**添加**、**删除**、**修改**。
+    - [x] 逻辑：调用 `NetworkManager` 获取数据并填进表格。
 
-- [ ] **标签页 2: 用户列表 (只读)**
-    - [ ] 放置表格 `QTableWidget`。
-    - [ ] 逻辑：调用 `NetworkManager` 获取数据并填进表格。
+- [x] **标签页 2: 用户列表 (只读)**
+    - [x] 放置表格 `QTableWidget`。
+    - [x] 逻辑：调用 `NetworkManager` 获取数据并填进表格。
 
-- [ ] **标签页 3: 订单列表 (只读)**
-    - [ ] 放置表格 `QTableWidget`。
-    - [ ] 逻辑：调用 `NetworkManager` 获取数据并填进表格。
+- [x] **标签页 3: 订单列表 (只读)**
+    - [x] 放置表格 `QTableWidget`。
+    - [x] 逻辑：调用 `NetworkManager` 获取数据并填进表格。

@@ -1,9 +1,11 @@
 #include "admin_dashboard.h"
 #include "ui_admin_dashboard.h"
 #include "network_manager.h"
+#include "flightdialog.h"
 #include <QMessageBox>
 #include <QInputDialog>
 #include <QDebug>
+#include <QTimer>
 
 AdminDashboard::AdminDashboard(QWidget *parent)
     : QMainWindow(parent)
@@ -11,24 +13,24 @@ AdminDashboard::AdminDashboard(QWidget *parent)
 {
     ui->setupUi(this);
 
-    // 1. 初始化表格样式（设置列头）
+    // 初始化表格样式（设置列头）
     setupTables();
 
-    // 2. 连接 NetworkManager 的信号
+    // 连接NetworkManager的信号
     NetworkManager *nm = &NetworkManager::instance();
 
-    // 当收到航班列表 -> 调用 updateFlightTable
+    // 当收到航班列表，调用updateFlightTable函数
     connect(nm, &NetworkManager::allFlightsReceived, this, &AdminDashboard::updateFlightTable);
-    // 当收到用户列表 -> 调用 updateUserTable
+    // 当收到用户列表，调用updateUserTable函数
     connect(nm, &NetworkManager::allUsersReceived, this, &AdminDashboard::updateUserTable);
-    // 当收到订单列表 -> 调用 updateBookingTable
+    // 当收到订单列表，调用updateBookingTable函数
     connect(nm, &NetworkManager::allBookingsReceived, this, &AdminDashboard::updateBookingTable);
 
-    // 当操作成功/失败 -> 弹窗提示
+    // 当操作成功/失败，弹窗提示
     connect(nm, &NetworkManager::adminOperationSuccess, this, &AdminDashboard::handleOperationSuccess);
     connect(nm, &NetworkManager::adminOperationFailed, this, &AdminDashboard::handleOperationFailed);
 
-    // 3. 窗口一打开，立刻模拟点击“刷新”按钮，去拉取数据
+    // 窗口一打开，立刻模拟点击“刷新”按钮，拉取数据
     on_btnRefresh_clicked();
 }
 
@@ -37,16 +39,15 @@ AdminDashboard::~AdminDashboard()
     delete ui;
 }
 
-// ================= 辅助函数：设置表头 =================
-
+// 辅助函数：设置表头
 void AdminDashboard::setupTables()
 {
     // 设置航班表头
     ui->flightTable->setColumnCount(7);
     ui->flightTable->setHorizontalHeaderLabels({"ID", "航班号", "出发地", "目的地", "起飞时间", "价格", "余票"});
-    ui->flightTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch); // 自适应宽度
-    ui->flightTable->setEditTriggers(QAbstractItemView::NoEditTriggers); // 禁止双击编辑
-    ui->flightTable->setSelectionBehavior(QAbstractItemView::SelectRows); // 选中整行
+    ui->flightTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch); // 自适应宽度填满窗口
+    ui->flightTable->setEditTriggers(QAbstractItemView::NoEditTriggers);  // 禁止直接双击表格编辑，只读
+    ui->flightTable->setSelectionBehavior(QAbstractItemView::SelectRows);  // 点击时选中一整行
 
     // 设置用户表头
     ui->userTable->setColumnCount(3);
@@ -63,67 +64,113 @@ void AdminDashboard::setupTables()
     ui->bookingTable->setSelectionBehavior(QAbstractItemView::SelectRows);
 }
 
-// ================= 按钮点击事件 =================
-
+// 点击“刷新”按钮
 void AdminDashboard::on_btnRefresh_clicked()
 {
-    // 发送查询所有航班的请求
-    // (因为Server端目前只实现了 handleSearchFlights，所以这个肯定能用)
+    // 马上查航班
     NetworkManager::instance().sendGetAllFlightsRequest();
 
-    // 下面这两个请求，因为Server端可能还没写好 handleAdminGetAllUsers，
-    // 发送出去可能会收到 "Error: 未知的action"。
-    // 你可以先注释掉，等Server队友写好了再解开。
-    // NetworkManager::instance().sendAdminGetAllUsersRequest();
-    // NetworkManager::instance().sendAdminGetAllBookingsRequest();
+    // 延迟200毫秒查用户
+    QTimer::singleShot(200, [this]()
+    {
+        // NetworkManager::instance().sendAdminGetAllUsersRequest();
+    });
+
+    // 延迟400毫秒查订单
+    QTimer::singleShot(400, [this]()
+    {
+        // NetworkManager::instance().sendAdminGetAllBookingsRequest();
+    });
 }
 
+// 点击“删除”按钮
 void AdminDashboard::on_btnDeleteFlight_clicked()
 {
-    // 1. 获取当前选中的行
+    // 获取当前选中的行
     int currentRow = ui->flightTable->currentRow();
-    if (currentRow < 0) {
+    if (currentRow < 0)
+    {
         QMessageBox::warning(this, "提示", "请先选择要删除的航班！");
         return;
     }
 
-    // 2. 获取该行第一列 (ID列) 的内容
+    // 获取该行第一列（ID列）的内容
     int flightId = ui->flightTable->item(currentRow, 0)->text().toInt();
 
-    // 3. 二次确认
-    if (QMessageBox::question(this, "确认", "确定要删除该航班吗？") == QMessageBox::Yes) {
-        // 4. 发送删除请求
+    // 二次确认
+    if (QMessageBox::question(this, "确认", "确定要删除该航班吗？") == QMessageBox::Yes)
+    {
+        // 发送删除请求
         NetworkManager::instance().sendAdminDeleteFlightRequest(flightId);
     }
 }
 
+// 添加航班
 void AdminDashboard::on_btnAddFlight_clicked()
 {
-    QMessageBox::information(this, "提示", "添加功能需要弹出一个新窗口填数据，暂时还没写。");
-    // TODO: 创建 AddFlightDialog
+    // 创建弹窗
+    FlightDialog dlg(this);
+
+    // 显示弹窗并等待用户点击“确定”或“取消”
+    if (dlg.exec() == QDialog::Accepted)
+    {
+        // 点击“确定”，获取数据
+        QJsonObject newFlightData = dlg.getFlightData();
+
+        // 发送给服务器
+        NetworkManager::instance().sendAdminAddFlightRequest(newFlightData);
+    }
 }
 
+// 编辑航班
 void AdminDashboard::on_btnEditFlight_clicked()
 {
+    // 获取当前选中的行
     int currentRow = ui->flightTable->currentRow();
-    if (currentRow < 0) {
+    if (currentRow < 0)
+    {
         QMessageBox::warning(this, "提示", "请先选择要修改的航班！");
         return;
     }
-    QMessageBox::information(this, "提示", "修改功能需要弹出一个新窗口，暂时还没写。");
+
+    // 从表格中提取当前航班的数据
+    // 0:ID, 1:航班号, 2:出发, 3:目的, 4:时间, 5:价格, 6:座位
+    int id = ui->flightTable->item(currentRow, 0)->text().toInt();
+    QString no = ui->flightTable->item(currentRow, 1)->text();
+    QString origin = ui->flightTable->item(currentRow, 2)->text();
+    QString dest = ui->flightTable->item(currentRow, 3)->text();
+    QDateTime time = QDateTime::fromString(ui->flightTable->item(currentRow, 4)->text(), "yyyy-MM-dd HH:mm:ss");
+    double price = ui->flightTable->item(currentRow, 5)->text().toDouble();
+    int seats = ui->flightTable->item(currentRow, 6)->text().toInt();
+
+    // 创建弹窗并填入旧数据
+    FlightDialog dlg(this);
+    dlg.setFlightData(id, no, origin, dest, time, price, seats);
+
+    // 显示弹窗
+    if (dlg.exec() == QDialog::Accepted)
+    {
+        // 获取修改后的数据
+        QJsonObject updatedData = dlg.getFlightData();
+        // 从JSON里单独把ID拿出来
+        int flightId = updatedData["flight_id"].toInt();
+        // 发送更新请求
+        NetworkManager::instance().sendAdminUpdateFlightRequest(flightId, updatedData);
+    }
 }
 
-// ================= 数据更新槽函数 (接收服务器数据并填表) =================
-
+// 航班数据更新槽函数（接收服务器数据并填表）
 void AdminDashboard::updateFlightTable(const QJsonArray &flights)
 {
-    ui->flightTable->setRowCount(0); // 清空旧数据
+    ui->flightTable->setRowCount(0);  // 清空旧数据
 
-    for (const QJsonValue &val : flights) {
-        QJsonObject obj = val.toObject();
+    // 遍历JSON数组
+    for (const QJsonValue &val : flights)
+    {
 
-        int row = ui->flightTable->rowCount();
-        ui->flightTable->insertRow(row);
+        QJsonObject obj = val.toObject();  //拿到单条航班信息
+        int row = ui->flightTable->rowCount();  // 获取行数
+        ui->flightTable->insertRow(row);  // 末尾新建一行
 
         // 填入数据
         ui->flightTable->setItem(row, 0, new QTableWidgetItem(QString::number(obj["flight_id"].toInt())));
@@ -136,28 +183,38 @@ void AdminDashboard::updateFlightTable(const QJsonArray &flights)
     }
 }
 
+// 用户数据更新槽函数（接收服务器数据并填表）
 void AdminDashboard::updateUserTable(const QJsonArray &users)
 {
-    ui->userTable->setRowCount(0);
-    for (const QJsonValue &val : users) {
-        QJsonObject obj = val.toObject();
-        int row = ui->userTable->rowCount();
-        ui->userTable->insertRow(row);
+    ui->userTable->setRowCount(0);  // 清空旧数据
 
+    // 遍历JSON数组
+    for (const QJsonValue &val : users)
+    {
+        QJsonObject obj = val.toObject();  // 拿到单条用户信息
+        int row = ui->userTable->rowCount();  // 获取行数
+        ui->userTable->insertRow(row);  // 末尾新建一行
+
+        // 填入数据
         ui->userTable->setItem(row, 0, new QTableWidgetItem(QString::number(obj["user_id"].toInt())));
         ui->userTable->setItem(row, 1, new QTableWidgetItem(obj["username"].toString()));
         ui->userTable->setItem(row, 2, new QTableWidgetItem(obj["created_at"].toString()));
     }
 }
 
+// 订单数据更新槽函数（接收服务器数据并填表）
 void AdminDashboard::updateBookingTable(const QJsonArray &bookings)
 {
-    ui->bookingTable->setRowCount(0);
-    for (const QJsonValue &val : bookings) {
-        QJsonObject obj = val.toObject();
-        int row = ui->bookingTable->rowCount();
-        ui->bookingTable->insertRow(row);
+    ui->bookingTable->setRowCount(0);  // 清空旧数据
 
+    // 遍历JSON数组
+    for (const QJsonValue &val : bookings)
+    {
+        QJsonObject obj = val.toObject();  // 拿到单条订单信息
+        int row = ui->bookingTable->rowCount();  // 获取行数
+        ui->bookingTable->insertRow(row);  // 末尾新建一行
+
+        // 填入数据
         ui->bookingTable->setItem(row, 0, new QTableWidgetItem(QString::number(obj["booking_id"].toInt())));
         ui->bookingTable->setItem(row, 1, new QTableWidgetItem(QString::number(obj["user_id"].toInt())));
         ui->bookingTable->setItem(row, 2, new QTableWidgetItem(QString::number(obj["flight_id"].toInt())));
@@ -165,15 +222,15 @@ void AdminDashboard::updateBookingTable(const QJsonArray &bookings)
     }
 }
 
-// ================= 操作反馈 =================
-
+// 提示操作成功
 void AdminDashboard::handleOperationSuccess(const QString &msg)
 {
     QMessageBox::information(this, "成功", msg);
-    // 操作成功后（比如删除了航班），自动刷新一下列表
+    // 操作成功后自动刷新一下列表
     on_btnRefresh_clicked();
 }
 
+// 提示操作失败
 void AdminDashboard::handleOperationFailed(const QString &msg)
 {
     QMessageBox::warning(this, "失败", msg);
