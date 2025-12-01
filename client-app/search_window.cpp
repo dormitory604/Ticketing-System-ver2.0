@@ -5,6 +5,7 @@
 #include "app_session.h"
 #include "myorders_window.h"
 #include "profile_window.h"
+#include "booking_dialog.h"
 
 #include <QMessageBox>
 #include <QDate>
@@ -12,6 +13,7 @@
 #include <QTableWidgetItem>
 #include <QComboBox>
 #include <QCheckBox>
+#include <QJsonObject>
 
 SearchWindow::SearchWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -82,8 +84,31 @@ void SearchWindow::on_bookButton_clicked()
         return;
     }
 
-    NetworkManager::instance().bookFlightRequest(userId, flightId);
-    ui->statusLabel->setText(tr("正在提交预订请求..."));
+    const QJsonObject flight = currentSelectedFlight();
+    if (flight.isEmpty()) {
+        QMessageBox::warning(this, tr("提示"), tr("未能读取航班信息，请刷新后重试"));
+        return;
+    }
+
+    const double price = flight.value("price").toDouble();
+
+    BookingDialog dialog(userId,
+                         flightId,
+                         flight.value("flight_number").toString(),
+                         price,
+                         passengerCandidates(),
+                         this);
+
+    connect(&dialog, &BookingDialog::bookingConfirmed, this,
+            [this](int userId, int flightId, const QString&, const QString&, const QString&) {
+                NetworkManager::instance().bookFlightRequest(userId, flightId);
+                ui->statusLabel->setText(tr("正在提交预订请求..."));
+            });
+
+    const int result = dialog.exec();
+    if (result == QDialog::Rejected) {
+        ui->statusLabel->setText(tr("订单填写已取消"));
+    }
 }
 
 void SearchWindow::on_myOrdersButton_clicked()
@@ -160,6 +185,20 @@ int SearchWindow::currentSelectedFlightId() const
     }
     const QJsonObject obj = m_latestFlights.at(row).toObject();
     return obj.value("flight_id").toInt();
+}
+
+QJsonObject SearchWindow::currentSelectedFlight() const
+{
+    const QModelIndexList selected = ui->flightsTable->selectionModel()->selectedRows();
+    if (selected.isEmpty()) {
+        return QJsonObject();
+    }
+
+    const int row = selected.first().row();
+    if (row < 0 || row >= m_latestFlights.size()) {
+        return QJsonObject();
+    }
+    return m_latestFlights.at(row).toObject();
 }
 
 void SearchWindow::updateUserSummary()
@@ -249,4 +288,24 @@ QString SearchWindow::passengerSummaryText() const
         return tr("乘客类型：默认");
     }
     return tr("乘客类型：%1").arg(readable.join(QStringLiteral("、")));
+}
+
+QStringList SearchWindow::passengerCandidates() const
+{
+    QStringList candidates;
+    if (AppSession::instance().isLoggedIn()) {
+        const QString user = AppSession::instance().username();
+        if (!user.isEmpty()) {
+            candidates << user;
+        }
+    }
+    candidates << tr("本人") << tr("常用旅客");
+    if (ui->withChildCheckBox->isChecked()) {
+        candidates << tr("随行儿童");
+    }
+    if (ui->withInfantCheckBox->isChecked()) {
+        candidates << tr("携婴儿旅客");
+    }
+    candidates.removeDuplicates();
+    return candidates;
 }

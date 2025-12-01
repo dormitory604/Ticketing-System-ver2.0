@@ -3,10 +3,12 @@
 
 #include <QMainWindow>
 #include <QJsonArray>
+#include <QJsonObject>
 #include <QStringList>
 
 class MyOrdersWindow;
 class ProfileWindow;
+class BookingDialog;
 
 namespace Ui {
 class SearchWindow;
@@ -37,12 +39,14 @@ private slots:
 private:
     void populateFlightsTable(const QJsonArray& flights);
     int currentSelectedFlightId() const;
+    QJsonObject currentSelectedFlight() const;
     void updateUserSummary();
     void setupFilterControls();
     void updateFilterHint();
     QString currentCabinClassCode() const;
     QStringList selectedPassengerTypes() const;
     QString passengerSummaryText() const;
+    QStringList passengerCandidates() const;
 
     Ui::SearchWindow *ui;
     QJsonArray m_latestFlights;

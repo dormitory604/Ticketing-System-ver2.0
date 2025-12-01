@@ -91,8 +91,10 @@ set(OLD_GLOB
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/FluentUI/src/qrcode/rsecc.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/FluentUI/src/qrcode/split.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/app_session.cpp"
+  "D:/QTlearn/Ticketing-System-ver2-0/client-app/booking_dialog.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/CMakeFiles/3.30.5/CompilerIdCXX/CMakeCXXCompilerId.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/EWIEGA46WW/moc_app_session.cpp"
+  "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/EWIEGA46WW/moc_booking_dialog.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/EWIEGA46WW/moc_mainwindow.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/EWIEGA46WW/moc_myorders_window.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/EWIEGA46WW/moc_network_manager.cpp"
@@ -182,6 +184,8 @@ set(OLD_GLOB
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/FluentUI/src/singleton.h"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/FluentUI/src/stdafx.h"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/app_session.h"
+  "D:/QTlearn/Ticketing-System-ver2-0/client-app/booking_dialog.h"
+  "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/include/ui_booking_dialog.h"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/include/ui_mainwindow.h"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/include/ui_myorders_window.h"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/include/ui_profile_window.h"
@@ -575,6 +579,7 @@ endif()
 # _directory_contents at C:/Qt/6.10.0/mingw_64/lib/cmake/Qt6LinguistTools/Qt6LinguistToolsMacros.cmake:55 (file)
 file(GLOB_RECURSE NEW_GLOB LIST_DIRECTORIES false "D:/QTlearn/Ticketing-System-ver2-0/client-app/*.ui")
 set(OLD_GLOB
+  "D:/QTlearn/Ticketing-System-ver2-0/client-app/booking_dialog.ui"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/mainwindow.ui"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/myorders_window.ui"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/profile_window.ui"

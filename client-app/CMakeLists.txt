@@ -38,6 +38,9 @@ set(PROJECT_SOURCES
         profile_window.cpp
         profile_window.h
         profile_window.ui
+        booking_dialog.cpp
+        booking_dialog.h
+        booking_dialog.ui
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

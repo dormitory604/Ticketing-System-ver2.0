@@ -1,7 +1,5 @@
-D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/EWIEGA46WW/moc_search_window.cpp: D:/QTlearn/Ticketing-System-ver2-0/client-app/search_window.h \
+D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/EWIEGA46WW/moc_booking_dialog.cpp: D:/QTlearn/Ticketing-System-ver2-0/client-app/booking_dialog.h \
   D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/moc_predefs.h \
-  C:/Qt/6.10.0/mingw_64/include/QtCore/QJsonArray \
-  C:/Qt/6.10.0/mingw_64/include/QtCore/QJsonObject \
   C:/Qt/6.10.0/mingw_64/include/QtCore/QStringList \
   C:/Qt/6.10.0/mingw_64/include/QtCore/q17memory.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/q20functional.h \
@@ -25,9 +23,6 @@ D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_b
   C:/Qt/6.10.0/mingw_64/include/QtCore/qbytearrayalgorithms.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qbytearraylist.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qbytearrayview.h \
-  C:/Qt/6.10.0/mingw_64/include/QtCore/qcalendar.h \
-  C:/Qt/6.10.0/mingw_64/include/QtCore/qcborcommon.h \
-  C:/Qt/6.10.0/mingw_64/include/QtCore/qcborvalue.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qchar.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qcheckedint_impl.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qcompare.h \
@@ -42,7 +37,6 @@ D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_b
   C:/Qt/6.10.0/mingw_64/include/QtCore/qcontiguouscache.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qdarwinhelpers.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qdatastream.h \
-  C:/Qt/6.10.0/mingw_64/include/QtCore/qdatetime.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qdebug.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qendian.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qexceptionhandling.h \
@@ -59,15 +53,9 @@ D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_b
   C:/Qt/6.10.0/mingw_64/include/QtCore/qiodevicebase.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qiterable.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qiterator.h \
-  C:/Qt/6.10.0/mingw_64/include/QtCore/qjsonarray.h \
-  C:/Qt/6.10.0/mingw_64/include/QtCore/qjsondocument.h \
-  C:/Qt/6.10.0/mingw_64/include/QtCore/qjsonobject.h \
-  C:/Qt/6.10.0/mingw_64/include/QtCore/qjsonparseerror.h \
-  C:/Qt/6.10.0/mingw_64/include/QtCore/qjsonvalue.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qlatin1stringview.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qline.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qlist.h \
-  C:/Qt/6.10.0/mingw_64/include/QtCore/qlocale.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qlogging.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qmalloc.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qmap.h \
@@ -88,7 +76,6 @@ D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_b
   C:/Qt/6.10.0/mingw_64/include/QtCore/qprocessordetection.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qrect.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qrefcount.h \
-  C:/Qt/6.10.0/mingw_64/include/QtCore/qregularexpression.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qscopedpointer.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qscopeguard.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qset.h \
@@ -135,14 +122,13 @@ D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_b
   C:/Qt/6.10.0/mingw_64/include/QtCore/qtversionchecks.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qtypeinfo.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qtypes.h \
-  C:/Qt/6.10.0/mingw_64/include/QtCore/qurl.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qutf8stringview.h \
-  C:/Qt/6.10.0/mingw_64/include/QtCore/quuid.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qvariant.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qvarlengtharray.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qversiontagging.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qxptype_traits.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qyieldcpu.h \
+  C:/Qt/6.10.0/mingw_64/include/QtGui/QPixmap \
   C:/Qt/6.10.0/mingw_64/include/QtGui/qaction.h \
   C:/Qt/6.10.0/mingw_64/include/QtGui/qbitmap.h \
   C:/Qt/6.10.0/mingw_64/include/QtGui/qbrush.h \
@@ -169,10 +155,9 @@ D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_b
   C:/Qt/6.10.0/mingw_64/include/QtGui/qtransform.h \
   C:/Qt/6.10.0/mingw_64/include/QtGui/qwindowdefs.h \
   C:/Qt/6.10.0/mingw_64/include/QtGui/qwindowdefs_win.h \
-  C:/Qt/6.10.0/mingw_64/include/QtWidgets/QMainWindow \
-  C:/Qt/6.10.0/mingw_64/include/QtWidgets/qmainwindow.h \
+  C:/Qt/6.10.0/mingw_64/include/QtWidgets/QDialog \
+  C:/Qt/6.10.0/mingw_64/include/QtWidgets/qdialog.h \
   C:/Qt/6.10.0/mingw_64/include/QtWidgets/qsizepolicy.h \
-  C:/Qt/6.10.0/mingw_64/include/QtWidgets/qtabwidget.h \
   C:/Qt/6.10.0/mingw_64/include/QtWidgets/qtwidgets-config.h \
   C:/Qt/6.10.0/mingw_64/include/QtWidgets/qtwidgetsexports.h \
   C:/Qt/6.10.0/mingw_64/include/QtWidgets/qtwidgetsglobal.h \

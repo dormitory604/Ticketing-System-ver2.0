@@ -158,6 +158,7 @@ client-app_autogen/timestamp: \
 	C:/Qt/6.10.0/mingw_64/include/QtCore/qversiontagging.h \
 	C:/Qt/6.10.0/mingw_64/include/QtCore/qxptype_traits.h \
 	C:/Qt/6.10.0/mingw_64/include/QtCore/qyieldcpu.h \
+	C:/Qt/6.10.0/mingw_64/include/QtGui/QPixmap \
 	C:/Qt/6.10.0/mingw_64/include/QtGui/QShowEvent \
 	C:/Qt/6.10.0/mingw_64/include/QtGui/QTransform \
 	C:/Qt/6.10.0/mingw_64/include/QtGui/qaction.h \
@@ -649,6 +650,8 @@ client-app_autogen/timestamp: \
 	D:/QTlearn/Ticketing-System-ver2-0/client-app/CMakeLists.txt \
 	D:/QTlearn/Ticketing-System-ver2-0/client-app/app_session.cpp \
 	D:/QTlearn/Ticketing-System-ver2-0/client-app/app_session.h \
+	D:/QTlearn/Ticketing-System-ver2-0/client-app/booking_dialog.cpp \
+	D:/QTlearn/Ticketing-System-ver2-0/client-app/booking_dialog.h \
 	D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/.qtc/package-manager/auto-setup.cmake \
 	D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/.qtc/package-manager/maintenance_tool_provider.cmake \
 	D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/CMakeFiles/3.30.5/CMakeCXXCompiler.cmake \
@@ -668,6 +671,7 @@ client-app_autogen/timestamp: \
 	D:/QTlearn/Ticketing-System-ver2-0/client-app/register_window.h \
 	D:/QTlearn/Ticketing-System-ver2-0/client-app/search_window.cpp \
 	D:/QTlearn/Ticketing-System-ver2-0/client-app/search_window.h \
+	D:/QTlearn/Ticketing-System-ver2-0/client-app/booking_dialog.ui \
 	D:/QTlearn/Ticketing-System-ver2-0/client-app/mainwindow.ui \
 	D:/QTlearn/Ticketing-System-ver2-0/client-app/myorders_window.ui \
 	D:/QTlearn/Ticketing-System-ver2-0/client-app/profile_window.ui \

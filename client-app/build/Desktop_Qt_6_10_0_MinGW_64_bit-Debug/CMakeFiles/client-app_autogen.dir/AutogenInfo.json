@@ -431,6 +431,12 @@
 			null
 		],
 		[
+			"D:/QTlearn/Ticketing-System-ver2-0/client-app/booking_dialog.h",
+			"MU",
+			"EWIEGA46WW/moc_booking_dialog.cpp",
+			null
+		],
+		[
 			"D:/QTlearn/Ticketing-System-ver2-0/client-app/mainwindow.h",
 			"MU",
 			"EWIEGA46WW/moc_mainwindow.cpp",
@@ -543,6 +549,11 @@
 	[
 		[
 			"D:/QTlearn/Ticketing-System-ver2-0/client-app/app_session.cpp",
+			"MU",
+			null
+		],
+		[
+			"D:/QTlearn/Ticketing-System-ver2-0/client-app/booking_dialog.cpp",
 			"MU",
 			null
 		],

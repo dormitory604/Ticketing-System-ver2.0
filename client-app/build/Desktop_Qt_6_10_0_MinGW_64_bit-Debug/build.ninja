@@ -121,6 +121,14 @@ build CMakeFiles/client-app.dir/profile_window.cpp.obj: CXX_COMPILER__client-app
   OBJECT_DIR = CMakeFiles\client-app.dir
   OBJECT_FILE_DIR = CMakeFiles\client-app.dir
 
+build CMakeFiles/client-app.dir/booking_dialog.cpp.obj: CXX_COMPILER__client-app_unscanned_Debug D$:/QTlearn/Ticketing-System-ver2-0/client-app/booking_dialog.cpp || cmake_object_order_depends_target_client-app
+  DEFINES = -DMINGW_HAS_SECURE_API=1 -DQT_CORE_LIB -DQT_GUI_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_WIDGETS_LIB -DUNICODE -DUSE_FAKE_SERVER -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64
+  DEP_FILE = CMakeFiles\client-app.dir\booking_dialog.cpp.obj.d
+  FLAGS = -DQT_QML_DEBUG -g -std=gnu++17 -fdiagnostics-color=always
+  INCLUDES = -ID:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/include -isystem C:/Qt/6.10.0/mingw_64/include/QtCore -isystem C:/Qt/6.10.0/mingw_64/include -isystem C:/Qt/6.10.0/mingw_64/mkspecs/win32-g++ -isystem C:/Qt/6.10.0/mingw_64/include/QtWidgets -isystem C:/Qt/6.10.0/mingw_64/include/QtGui -isystem C:/Qt/6.10.0/mingw_64/include/QtNetwork
+  OBJECT_DIR = CMakeFiles\client-app.dir
+  OBJECT_FILE_DIR = CMakeFiles\client-app.dir
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target client-app
@@ -129,7 +137,7 @@ build CMakeFiles/client-app.dir/profile_window.cpp.obj: CXX_COMPILER__client-app
 #############################################
 # Link the executable client-app.exe
 
-build client-app.exe: CXX_EXECUTABLE_LINKER__client-app_Debug CMakeFiles/client-app.dir/client-app_autogen/mocs_compilation.cpp.obj CMakeFiles/client-app.dir/main.cpp.obj CMakeFiles/client-app.dir/mainwindow.cpp.obj CMakeFiles/client-app.dir/network_manager.cpp.obj CMakeFiles/client-app.dir/app_session.cpp.obj CMakeFiles/client-app.dir/register_window.cpp.obj CMakeFiles/client-app.dir/search_window.cpp.obj CMakeFiles/client-app.dir/myorders_window.cpp.obj CMakeFiles/client-app.dir/profile_window.cpp.obj | C$:/Qt/6.10.0/mingw_64/lib/libQt6Widgets.a C$:/Qt/6.10.0/mingw_64/lib/libQt6Network.a C$:/Qt/6.10.0/mingw_64/lib/libQt6Gui.a C$:/Qt/6.10.0/mingw_64/lib/libQt6Core.a C$:/Qt/6.10.0/mingw_64/lib/libQt6EntryPoint.a || client-app_autogen client-app_autogen_timestamp_deps
+build client-app.exe: CXX_EXECUTABLE_LINKER__client-app_Debug CMakeFiles/client-app.dir/client-app_autogen/mocs_compilation.cpp.obj CMakeFiles/client-app.dir/main.cpp.obj CMakeFiles/client-app.dir/mainwindow.cpp.obj CMakeFiles/client-app.dir/network_manager.cpp.obj CMakeFiles/client-app.dir/app_session.cpp.obj CMakeFiles/client-app.dir/register_window.cpp.obj CMakeFiles/client-app.dir/search_window.cpp.obj CMakeFiles/client-app.dir/myorders_window.cpp.obj CMakeFiles/client-app.dir/profile_window.cpp.obj CMakeFiles/client-app.dir/booking_dialog.cpp.obj | C$:/Qt/6.10.0/mingw_64/lib/libQt6Widgets.a C$:/Qt/6.10.0/mingw_64/lib/libQt6Network.a C$:/Qt/6.10.0/mingw_64/lib/libQt6Gui.a C$:/Qt/6.10.0/mingw_64/lib/libQt6Core.a C$:/Qt/6.10.0/mingw_64/lib/libQt6EntryPoint.a || client-app_autogen client-app_autogen_timestamp_deps
   FLAGS = -DQT_QML_DEBUG -g
   LINK_FLAGS = -mwindows
   LINK_LIBRARIES = C:/Qt/6.10.0/mingw_64/lib/libQt6Widgets.a  C:/Qt/6.10.0/mingw_64/lib/libQt6Network.a  C:/Qt/6.10.0/mingw_64/lib/libQt6Gui.a  -ld3d11  -ldxgi  -ldxguid  -ld3d12  C:/Qt/6.10.0/mingw_64/lib/libQt6Core.a  -lmpr  -luserenv  -lmingw32  C:/Qt/6.10.0/mingw_64/lib/libQt6EntryPoint.a  -lshell32  -lws2_32  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
@@ -216,7 +224,7 @@ build client-app_autogen_timestamp_deps: phony
 #############################################
 # Utility command for client-app_autogen
 
-build client-app_autogen: phony CMakeFiles/client-app_autogen client-app_autogen/include/ui_mainwindow.h client-app_autogen/include/ui_register_window.h client-app_autogen/include/ui_search_window.h client-app_autogen/include/ui_myorders_window.h client-app_autogen/include/ui_profile_window.h client-app_autogen/timestamp client-app_autogen/mocs_compilation.cpp client-app_autogen_timestamp_deps
+build client-app_autogen: phony CMakeFiles/client-app_autogen client-app_autogen/include/ui_mainwindow.h client-app_autogen/include/ui_register_window.h client-app_autogen/include/ui_search_window.h client-app_autogen/include/ui_myorders_window.h client-app_autogen/include/ui_profile_window.h client-app_autogen/include/ui_booking_dialog.h client-app_autogen/timestamp client-app_autogen/mocs_compilation.cpp client-app_autogen_timestamp_deps
 
 
 #############################################
@@ -233,7 +241,7 @@ build client-app_autogen/timestamp client-app_autogen/mocs_compilation.cpp | ${c
 #############################################
 # Phony custom command for CMakeFiles\client-app_autogen
 
-build CMakeFiles/client-app_autogen client-app_autogen/include/ui_mainwindow.h client-app_autogen/include/ui_register_window.h client-app_autogen/include/ui_search_window.h client-app_autogen/include/ui_myorders_window.h client-app_autogen/include/ui_profile_window.h | ${cmake_ninja_workdir}CMakeFiles/client-app_autogen ${cmake_ninja_workdir}client-app_autogen/include/ui_mainwindow.h ${cmake_ninja_workdir}client-app_autogen/include/ui_register_window.h ${cmake_ninja_workdir}client-app_autogen/include/ui_search_window.h ${cmake_ninja_workdir}client-app_autogen/include/ui_myorders_window.h ${cmake_ninja_workdir}client-app_autogen/include/ui_profile_window.h: phony client-app_autogen/timestamp || client-app_autogen_timestamp_deps
+build CMakeFiles/client-app_autogen client-app_autogen/include/ui_mainwindow.h client-app_autogen/include/ui_register_window.h client-app_autogen/include/ui_search_window.h client-app_autogen/include/ui_myorders_window.h client-app_autogen/include/ui_profile_window.h client-app_autogen/include/ui_booking_dialog.h | ${cmake_ninja_workdir}CMakeFiles/client-app_autogen ${cmake_ninja_workdir}client-app_autogen/include/ui_mainwindow.h ${cmake_ninja_workdir}client-app_autogen/include/ui_register_window.h ${cmake_ninja_workdir}client-app_autogen/include/ui_search_window.h ${cmake_ninja_workdir}client-app_autogen/include/ui_myorders_window.h ${cmake_ninja_workdir}client-app_autogen/include/ui_profile_window.h ${cmake_ninja_workdir}client-app_autogen/include/ui_booking_dialog.h: phony client-app_autogen/timestamp || client-app_autogen_timestamp_deps
 
 # =============================================================================
 # Target aliases.
