@@ -144,6 +144,15 @@ QJsonObject TcpServer::handleRequest(const QJsonObject& request)
     if (action == "search_flights") {
         return handleSearchFlights(data);
     }
+    if (action == "book_flight") {
+        return handleBookFlight(data);
+    }
+    if (action == "get_my_orders") {
+        return handleGetMyOrders(data);
+    }
+    if (action == "cancel_order") {
+        return handleCancelOrder(data);
+    }
     // 如果后续还需要添加其他查询功能，按照下面的方式写
     // 记得一定要添加相对应的handle函数！！！
     // if (action == "admin_add_flight") {
@@ -207,7 +216,6 @@ QJsonObject TcpServer::handleRegister(const QJsonObject& data)
         {"data", QJsonValue()}    // 注册无需返回用户信息
     };
 }
-
 
 // 处理登录
 QJsonObject TcpServer::handleLogin(const QJsonObject& data)
@@ -396,76 +404,6 @@ QJsonObject TcpServer::handleBookFlight(const QJsonObject& data)
     };
 }
 
-// 预定航班
-QJsonObject TcpServer::handleGetMyOrders(const QJsonObject& data)
-{
-    int userId = data.value("user_id").toInt();
-
-    if (userId <= 0) {
-        return {
-            {"status", "error"},
-            {"message", "user_id 无效"},
-            {"data", QJsonValue()}
-        };
-    }
-
-    QSqlQuery query(DatabaseManager::instance().database());
-
-    // JOIN 查询，把订单和航班信息一起查出来
-    query.prepare(R"(
-        SELECT
-            Booking.booking_id,
-            Booking.status,
-            Booking.booking_time,
-            Flight.flight_id,
-            Flight.flight_number,
-            Flight.origin,
-            Flight.destination,
-            Flight.departure_time,
-            Flight.arrival_time
-        FROM Booking
-        JOIN Flight ON Booking.flight_id = Flight.flight_id
-        WHERE Booking.user_id = ?
-        ORDER BY Booking.booking_time DESC
-    )");
-
-    query.addBindValue(userId);
-
-    if (!query.exec()) {
-        return {
-            {"status", "error"},
-            {"message", "数据库查询失败：" + query.lastError().text()},
-            {"data", QJsonValue()}
-        };
-    }
-
-    // result array
-    QJsonArray orders;
-
-    while (query.next()) {
-        QJsonObject obj;
-
-        obj["booking_id"]      = query.value("booking_id").toInt();
-        obj["status"]          = query.value("status").toString();
-        obj["booking_time"]    = query.value("booking_time").toString();
-
-        obj["flight_id"]       = query.value("flight_id").toInt();
-        obj["flight_number"]   = query.value("flight_number").toString();
-        obj["origin"]          = query.value("origin").toString();
-        obj["destination"]     = query.value("destination").toString();
-        obj["departure_time"]  = query.value("departure_time").toString();
-        obj["arrival_time"]    = query.value("arrival_time").toString();
-
-        orders.append(obj);
-    }
-
-    return {
-        {"status", "success"},
-        {"message", "查询成功"},
-        {"data", orders}
-    };
-}
-
 // 获取我的订单
 QJsonObject TcpServer::handleGetMyOrders(const QJsonObject& data)
 {
@@ -549,7 +487,7 @@ QJsonObject TcpServer::handleCancelOrder(const QJsonObject& data)
     }
 
     QSqlDatabase db = DatabaseManager::instance().database();
-    db.transaction();  // 🔥 开始事务
+    db.transaction();  // 开始事务
 
     // 1. 查询订单信息
     QSqlQuery q1(db);

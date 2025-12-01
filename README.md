@@ -257,7 +257,7 @@ client-app
     ```
     
 
-#####3 `handleCancelOrder` (取消订单)
+##### `handleCancelOrder` (取消订单)
 
 - `action`: `"cancel_order"`
     
