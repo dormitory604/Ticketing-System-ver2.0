@@ -26,7 +26,9 @@ public:
     // 定义所有"发送"函数
     // 这是给UI界面调用的 (例如: on_loginButton_clicked)
     void sendLoginRequest(const QString& username, const QString& password);
-    void sendSearchRequest(const QString& origin, const QString& dest, const QString& date);
+    void sendSearchRequest(const QString& origin, const QString& dest, const QString& date,
+                           const QString& cabinClass = QString(),
+                           const QStringList& passengerTypes = {});
     void sendRegisterRequest(const QString& username, const QString& password);
     void bookFlightRequest(int userId, int flightId);
     void getMyOrdersRequest(int userId);

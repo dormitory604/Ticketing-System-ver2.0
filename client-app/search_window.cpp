@@ -10,6 +10,8 @@
 #include <QDate>
 #include <QShowEvent>
 #include <QTableWidgetItem>
+#include <QComboBox>
+#include <QCheckBox>
 
 SearchWindow::SearchWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -19,6 +21,7 @@ SearchWindow::SearchWindow(QWidget *parent)
 {
     ui->setupUi(this);
     ui->dateEdit->setDate(QDate::currentDate());
+    setupFilterControls();
     ui->flightsTable->setColumnCount(7);
     QStringList headers{tr("航班号"), tr("出发地"), tr("目的地"), tr("起飞时间"), tr("到达时间"), tr("剩余座位"), tr("价格")};
     ui->flightsTable->setHorizontalHeaderLabels(headers);
@@ -58,8 +61,10 @@ void SearchWindow::on_searchButton_clicked()
     const QString origin = ui->originLineEdit->text().trimmed();
     const QString dest = ui->destinationLineEdit->text().trimmed();
     const QString date = ui->dateEdit->date().toString("yyyy-MM-dd");
+    const QString cabinClass = currentCabinClassCode();
+    const QStringList passengerTypes = selectedPassengerTypes();
 
-    NetworkManager::instance().sendSearchRequest(origin, dest, date);
+    NetworkManager::instance().sendSearchRequest(origin, dest, date, cabinClass, passengerTypes);
     ui->statusLabel->setText(tr("正在查询航班..."));
 }
 
@@ -164,4 +169,84 @@ void SearchWindow::updateUserSummary()
     } else {
         ui->userSummaryLabel->setText(tr("未登录"));
     }
+}
+
+void SearchWindow::setupFilterControls()
+{
+    ui->cabinClassComboBox->setCurrentIndex(0);
+    const auto updateHint = [this]() {
+        updateFilterHint();
+    };
+
+    connect(ui->cabinClassComboBox, &QComboBox::currentIndexChanged, this, [updateHint](int) {
+        updateHint();
+    });
+    connect(ui->withChildCheckBox, &QCheckBox::toggled, this, [updateHint](bool) {
+        updateHint();
+    });
+    connect(ui->withInfantCheckBox, &QCheckBox::toggled, this, [updateHint](bool) {
+        updateHint();
+    });
+
+    updateFilterHint();
+}
+
+void SearchWindow::updateFilterHint()
+{
+    QString cabinText;
+    switch (ui->cabinClassComboBox->currentIndex()) {
+    case 1:
+        cabinText = tr("经济舱");
+        break;
+    case 2:
+        cabinText = tr("公务/头等舱");
+        break;
+    default:
+        cabinText = tr("不限舱等");
+        break;
+    }
+
+    ui->hintLabel->setText(QStringLiteral("%1 · %2")
+                               .arg(cabinText)
+                               .arg(passengerSummaryText()));
+}
+
+QString SearchWindow::currentCabinClassCode() const
+{
+    switch (ui->cabinClassComboBox->currentIndex()) {
+    case 1:
+        return QStringLiteral("economy");
+    case 2:
+        return QStringLiteral("business_first");
+    default:
+        return QString();
+    }
+}
+
+QStringList SearchWindow::selectedPassengerTypes() const
+{
+    QStringList types;
+    if (ui->withChildCheckBox->isChecked()) {
+        types << QStringLiteral("with_child");
+    }
+    if (ui->withInfantCheckBox->isChecked()) {
+        types << QStringLiteral("with_infant");
+    }
+    return types;
+}
+
+QString SearchWindow::passengerSummaryText() const
+{
+    QStringList readable;
+    if (ui->withChildCheckBox->isChecked()) {
+        readable << tr("带儿童");
+    }
+    if (ui->withInfantCheckBox->isChecked()) {
+        readable << tr("带婴儿");
+    }
+
+    if (readable.isEmpty()) {
+        return tr("乘客类型：默认");
+    }
+    return tr("乘客类型：%1").arg(readable.join(QStringLiteral("、")));
 }

@@ -89,6 +89,62 @@
          </property>
         </widget>
        </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="cabinClassLabel">
+         <property name="text">
+          <string>舱位：</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QComboBox" name="cabinClassComboBox">
+         <item>
+          <property name="text">
+           <string>不限舱等</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>经济舱</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>公务/头等舱</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="2" column="3">
+        <widget class="QLabel" name="passengerTypeLabel">
+         <property name="text">
+          <string>乘客类型：</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="4">
+        <widget class="QWidget" name="passengerTypeContainer" native="true">
+         <layout class="QHBoxLayout" name="passengerTypeLayout">
+          <property name="spacing">
+           <number>12</number>
+          </property>
+          <item>
+           <widget class="QCheckBox" name="withChildCheckBox">
+            <property name="text">
+             <string>带儿童</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="withInfantCheckBox">
+            <property name="text">
+             <string>带婴儿</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
       </layout>
      </widget>
     </item>

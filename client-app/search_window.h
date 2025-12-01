@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QJsonArray>
+#include <QStringList>
 
 class MyOrdersWindow;
 class ProfileWindow;
@@ -37,6 +38,11 @@ private:
     void populateFlightsTable(const QJsonArray& flights);
     int currentSelectedFlightId() const;
     void updateUserSummary();
+    void setupFilterControls();
+    void updateFilterHint();
+    QString currentCabinClassCode() const;
+    QStringList selectedPassengerTypes() const;
+    QString passengerSummaryText() const;
 
     Ui::SearchWindow *ui;
     QJsonArray m_latestFlights;

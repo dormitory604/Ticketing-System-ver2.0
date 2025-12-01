@@ -22,6 +22,7 @@
 2. **NetworkManager 扩展**
    - `network_manager.h/.cpp`：新增 `sendRegisterRequest`, `bookFlightRequest`, `getMyOrdersRequest`, `cancelOrderRequest` 以及对应成功/失败信号；`onReadyRead()` 根据 `action_response` 精细路由；错误时触发更具体的信号满足 README 的发射器/信号规范。
    - 当 `USE_FAKE_SERVER` 宏开启时，`NetworkManager` 不再创建真实 `QTcpSocket`，而是在各个 `send*Request` 中直接调用 `emitFake*` 系列函数，通过 `QTimer` 异步发射与服务器响应一致的信号（登录/搜索/注册/预订/订单/取消），方便离线测试 UI 流程；默认情况下该宏未启用，仍保持对真实服务器的 TCP 通信。
+   - `sendSearchRequest` 现在支持可选的 `cabin_class` 及 `passenger_types` 参数，并在 JSON 请求中附带，保证网络层仍遵循 README 的接口约定。
 
 3. **登录窗口改造**
    - `mainwindow.ui`：重建 UI，包含用户名/密码输入、登录按钮与“注册新用户”按钮，并提示用户流程。
@@ -41,6 +42,7 @@
      - 使用 `QTableWidget` 展示航班数组 (`searchResults`)，并允许选中航班后调用 `bookFlightRequest`。
      - 集成“我的订单”按钮打开 `MyOrdersWindow`。
      - 显示当前登录用户信息（依赖 `AppSession`）。
+     - 新增舱位下拉框（不限/经济/公务头等）与“带儿童/带婴儿”复选框，`search_window.cpp` 中新增 `currentCabinClassCode/selectedPassengerTypes` 等辅助函数，用户勾选后既能在提示文案中看到概要，也能随按钮点击同步传入 `sendSearchRequest`。
 
 6. **我的订单 & 取消**
    - `MyOrdersWindow`：

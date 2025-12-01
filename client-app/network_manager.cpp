@@ -201,7 +201,9 @@ void NetworkManager::updateProfileRequest(int userId, const QString &username, c
     sendJsonRequest(request);
 }
 
-void NetworkManager::sendSearchRequest(const QString& origin, const QString& dest, const QString& date)
+void NetworkManager::sendSearchRequest(const QString& origin, const QString& dest, const QString& date,
+                                       const QString& cabinClass,
+                                       const QStringList& passengerTypes)
 {
 #ifdef USE_FAKE_SERVER
     emitFakeSearchResults(origin, dest, date);
@@ -211,6 +213,10 @@ void NetworkManager::sendSearchRequest(const QString& origin, const QString& des
     if (!origin.isEmpty()) data["origin"] = origin;
     if (!dest.isEmpty()) data["destination"] = dest;
     if (!date.isEmpty()) data["date"] = date;
+    if (!cabinClass.isEmpty()) data["cabin_class"] = cabinClass;
+    if (!passengerTypes.isEmpty()) {
+        data["passenger_types"] = QJsonArray::fromStringList(passengerTypes);
+    }
 
     QJsonObject request;
     request["action"] = "search_flights";
