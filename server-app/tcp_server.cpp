@@ -135,6 +135,9 @@ QJsonObject TcpServer::handleRequest(const QJsonObject& request)
     QString action = request["action"].toString();
     QJsonObject data = request["data"].toObject();
 
+    if (action == "register") {
+        return handleRegister(data);
+    }
     if (action == "login") {
         return handleLogin(data);
     }
@@ -154,7 +157,56 @@ QJsonObject TcpServer::handleRequest(const QJsonObject& request)
     };
 }
 
-// 处理注册（TODO）
+// 处理注册
+QJsonObject TcpServer::handleRegister(const QJsonObject& data)
+{
+    // 1. 从 JSON 中取出字段
+    QString username = data.value("username").toString();
+    QString password = data.value("password").toString();
+
+    // 基本校验
+    if (username.isEmpty() || password.isEmpty()) {
+        return {
+            {"status", "error"},
+            {"message", "用户名或密码不能为空"},
+            {"data", QJsonValue()}
+        };
+    }
+
+    // 2. 准备 SQL
+    QSqlQuery query(DatabaseManager::instance().database());
+    query.prepare("INSERT INTO User (username, password) VALUES (?, ?)");
+
+    query.addBindValue(username);
+    query.addBindValue(password);
+
+    // 3. 执行 SQL
+    if (!query.exec()) {
+
+        // SQLite UNIQUE 约束错误码是 19
+        if (query.lastError().nativeErrorCode() == "19") {
+            return {
+                {"status", "error"},
+                {"message", QString("用户名 '%1' 已存在").arg(username)},
+                {"data", QJsonValue()}
+            };
+        }
+
+        // 其他数据库错误
+        return {
+            {"status", "error"},
+            {"message", "数据库错误：" + query.lastError().text()},
+            {"data", QJsonValue()}
+        };
+    }
+
+    // 4. 返回成功 JSON
+    return {
+        {"status", "success"},
+        {"message", "注册成功"},
+        {"data", QJsonValue()}    // 注册无需返回用户信息
+    };
+}
 
 
 // 处理登录
@@ -254,4 +306,314 @@ QJsonObject TcpServer::handleSearchFlights(const QJsonObject& data)
     };
 }
 
-// 预定航班（TODO）
+// 预定航班
+QJsonObject TcpServer::handleBookFlight(const QJsonObject& data)
+{
+    int userId = data.value("user_id").toInt();
+    int flightId = data.value("flight_id").toInt();
+
+    if (userId <= 0 || flightId <= 0) {
+        return {
+            {"status", "error"},
+            {"message", "参数错误"},
+            {"data", QJsonValue()}
+        };
+    }
+
+    QSqlDatabase db = DatabaseManager::instance().database();
+    db.transaction();  // 开始事务
+
+    // 1. 检查余票
+    QSqlQuery q1(db);
+    q1.prepare("SELECT remaining_seats FROM Flight WHERE flight_id = ?");
+    q1.addBindValue(flightId);
+
+    if (!q1.exec() || !q1.next()) {
+        db.rollback();
+        return {
+            {"status", "error"},
+            {"message", "航班不存在"},
+            {"data", QJsonValue()}
+        };
+    }
+
+    int seats = q1.value(0).toInt();
+    if (seats <= 0) {
+        db.rollback();
+        return {
+            {"status", "error"},
+            {"message", "票已售罄"},
+            {"data", QJsonValue()}
+        };
+    }
+
+    // 2. 扣减余票
+    QSqlQuery q2(db);
+    q2.prepare("UPDATE Flight SET remaining_seats = remaining_seats - 1 WHERE flight_id = ?");
+    q2.addBindValue(flightId);
+
+    if (!q2.exec()) {
+        db.rollback();
+        return {
+            {"status", "error"},
+            {"message", "更新航班座位失败"},
+            {"data", QJsonValue()}
+        };
+    }
+
+    // 3. 创建订单
+    QSqlQuery q3(db);
+    q3.prepare("INSERT INTO Booking (user_id, flight_id, status) VALUES (?, ?, 'confirmed')");
+    q3.addBindValue(userId);
+    q3.addBindValue(flightId);
+
+    if (!q3.exec()) {
+        db.rollback();
+        return {
+            {"status", "error"},
+            {"message", "创建订单失败：" + q3.lastError().text()},
+            {"data", QJsonValue()}
+        };
+    }
+
+    // 获取新订单 ID
+    int bookingId = q3.lastInsertId().toInt();
+
+    // 4. 全部成功 → 提交事务
+    db.commit();
+
+    // 5. 返回成功 JSON
+    QJsonObject info;
+    info["booking_id"] = bookingId;
+    info["user_id"] = userId;
+    info["flight_id"] = flightId;
+    info["status"] = "confirmed";
+
+    return {
+        {"status", "success"},
+        {"message", "预订成功"},
+        {"data", info}
+    };
+}
+
+// 预定航班
+QJsonObject TcpServer::handleGetMyOrders(const QJsonObject& data)
+{
+    int userId = data.value("user_id").toInt();
+
+    if (userId <= 0) {
+        return {
+            {"status", "error"},
+            {"message", "user_id 无效"},
+            {"data", QJsonValue()}
+        };
+    }
+
+    QSqlQuery query(DatabaseManager::instance().database());
+
+    // JOIN 查询，把订单和航班信息一起查出来
+    query.prepare(R"(
+        SELECT
+            Booking.booking_id,
+            Booking.status,
+            Booking.booking_time,
+            Flight.flight_id,
+            Flight.flight_number,
+            Flight.origin,
+            Flight.destination,
+            Flight.departure_time,
+            Flight.arrival_time
+        FROM Booking
+        JOIN Flight ON Booking.flight_id = Flight.flight_id
+        WHERE Booking.user_id = ?
+        ORDER BY Booking.booking_time DESC
+    )");
+
+    query.addBindValue(userId);
+
+    if (!query.exec()) {
+        return {
+            {"status", "error"},
+            {"message", "数据库查询失败：" + query.lastError().text()},
+            {"data", QJsonValue()}
+        };
+    }
+
+    // result array
+    QJsonArray orders;
+
+    while (query.next()) {
+        QJsonObject obj;
+
+        obj["booking_id"]      = query.value("booking_id").toInt();
+        obj["status"]          = query.value("status").toString();
+        obj["booking_time"]    = query.value("booking_time").toString();
+
+        obj["flight_id"]       = query.value("flight_id").toInt();
+        obj["flight_number"]   = query.value("flight_number").toString();
+        obj["origin"]          = query.value("origin").toString();
+        obj["destination"]     = query.value("destination").toString();
+        obj["departure_time"]  = query.value("departure_time").toString();
+        obj["arrival_time"]    = query.value("arrival_time").toString();
+
+        orders.append(obj);
+    }
+
+    return {
+        {"status", "success"},
+        {"message", "查询成功"},
+        {"data", orders}
+    };
+}
+
+// 获取我的订单
+QJsonObject TcpServer::handleGetMyOrders(const QJsonObject& data)
+{
+    int userId = data.value("user_id").toInt();
+
+    if (userId <= 0) {
+        return {
+            {"status", "error"},
+            {"message", "user_id 无效"},
+            {"data", QJsonValue()}
+        };
+    }
+
+    QSqlQuery query(DatabaseManager::instance().database());
+
+    // JOIN Booking 和 Flight，返回订单 + 航班信息
+    query.prepare(R"(
+        SELECT
+            Booking.booking_id,
+            Booking.status,
+            Booking.booking_time,
+            Flight.flight_id,
+            Flight.flight_number,
+            Flight.origin,
+            Flight.destination,
+            Flight.departure_time,
+            Flight.arrival_time
+        FROM Booking
+        JOIN Flight ON Booking.flight_id = Flight.flight_id
+        WHERE Booking.user_id = ?
+        ORDER BY Booking.booking_time DESC
+    )");
+
+    query.addBindValue(userId);
+
+    if (!query.exec()) {
+        return {
+            {"status", "error"},
+            {"message", "数据库查询失败：" + query.lastError().text()},
+            {"data", QJsonValue()}
+        };
+    }
+
+    QJsonArray orders;
+
+    while (query.next()) {
+        QJsonObject obj;
+
+        obj["booking_id"]     = query.value("booking_id").toInt();
+        obj["status"]         = query.value("status").toString();
+        obj["booking_time"]   = query.value("booking_time").toString();
+
+        obj["flight_id"]      = query.value("flight_id").toInt();
+        obj["flight_number"]  = query.value("flight_number").toString();
+        obj["origin"]         = query.value("origin").toString();
+        obj["destination"]    = query.value("destination").toString();
+        obj["departure_time"] = query.value("departure_time").toString();
+        obj["arrival_time"]   = query.value("arrival_time").toString();
+
+        orders.append(obj);
+    }
+
+    return {
+        {"status", "success"},
+        {"message", "查询成功"},
+        {"data", orders}
+    };
+}
+
+// 取消订单
+QJsonObject TcpServer::handleCancelOrder(const QJsonObject& data)
+{
+    int bookingId = data.value("booking_id").toInt();
+
+    if (bookingId <= 0) {
+        return {
+            {"status", "error"},
+            {"message", "booking_id 无效"},
+            {"data", QJsonValue()}
+        };
+    }
+
+    QSqlDatabase db = DatabaseManager::instance().database();
+    db.transaction();  // 🔥 开始事务
+
+    // 1. 查询订单信息
+    QSqlQuery q1(db);
+    q1.prepare("SELECT flight_id, status FROM Booking WHERE booking_id = ?");
+    q1.addBindValue(bookingId);
+
+    if (!q1.exec() || !q1.next()) {
+        db.rollback();
+        return {
+            {"status", "error"},
+            {"message", "订单不存在"},
+            {"data", QJsonValue()}
+        };
+    }
+
+    int flightId = q1.value("flight_id").toInt();
+    QString status = q1.value("status").toString();
+
+    // 2. 如果已经取消，直接返回
+    if (status == "cancelled") {
+        db.rollback();
+        return {
+            {"status", "error"},
+            {"message", "订单已取消，无需重复操作"},
+            {"data", QJsonValue()}
+        };
+    }
+
+    // 3. 更新订单状态为 cancelled
+    QSqlQuery q2(db);
+    q2.prepare("UPDATE Booking SET status = 'cancelled' WHERE booking_id = ?");
+    q2.addBindValue(bookingId);
+
+    if (!q2.exec()) {
+        db.rollback();
+        return {
+            {"status", "error"},
+            {"message", "订单状态更新失败"},
+            {"data", QJsonValue()}
+        };
+    }
+
+    // 4. 退回该航班的余票 remaining_seats + 1
+    QSqlQuery q3(db);
+    q3.prepare("UPDATE Flight SET remaining_seats = remaining_seats + 1 WHERE flight_id = ?");
+    q3.addBindValue(flightId);
+
+    if (!q3.exec()) {
+        db.rollback();
+        return {
+            {"status", "error"},
+            {"message", "余票回退失败"},
+            {"data", QJsonValue()}
+        };
+    }
+
+    // 5. 无错误，提交事务
+    db.commit();
+
+    return {
+        {"status", "success"},
+        {"message", "订单已成功取消"},
+        {"data", QJsonValue()}
+    };
+}
+
+
