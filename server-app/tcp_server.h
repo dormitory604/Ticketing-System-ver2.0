@@ -55,8 +55,9 @@ private:
     QJsonObject handleAdminAddFlight(const QJsonObject& data);
     QJsonObject handleAdminUpdateFlight(const QJsonObject& data);
     QJsonObject handleAdminDeleteFlight(const QJsonObject& data);
-    QJsonObject handleAdminGetAllUsers(const QJsonObject& data);
-    QJsonObject handleAdminGetAllBookings(const QJsonObject& data);
+    QJsonObject handleAdminGetAllFlights();
+    QJsonObject handleAdminGetAllUsers();
+    QJsonObject handleAdminGetAllBookings();
 
     // 注意，每一个action或者说每一个具体功能都需要一个handle函数！！！！
 
