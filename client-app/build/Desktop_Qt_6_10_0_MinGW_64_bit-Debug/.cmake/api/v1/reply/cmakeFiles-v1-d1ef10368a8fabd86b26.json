@@ -75,11 +75,14 @@
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/FluentUI/src/qrcode/rsecc.cpp",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/FluentUI/src/qrcode/split.cpp",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/app_session.cpp",
+				"D:/QTlearn/Ticketing-System-ver2-0/client-app/booking_dialog.cpp",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/CMakeFiles/3.30.5/CompilerIdCXX/CMakeCXXCompilerId.cpp",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/EWIEGA46WW/moc_app_session.cpp",
+				"D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/EWIEGA46WW/moc_booking_dialog.cpp",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/EWIEGA46WW/moc_mainwindow.cpp",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/EWIEGA46WW/moc_myorders_window.cpp",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/EWIEGA46WW/moc_network_manager.cpp",
+				"D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/EWIEGA46WW/moc_profile_window.cpp",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/EWIEGA46WW/moc_register_window.cpp",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/EWIEGA46WW/moc_search_window.cpp",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/mocs_compilation.cpp",
@@ -87,6 +90,7 @@
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/mainwindow.cpp",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/myorders_window.cpp",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/network_manager.cpp",
+				"D:/QTlearn/Ticketing-System-ver2-0/client-app/profile_window.cpp",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/register_window.cpp",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/search_window.cpp"
 			],
@@ -158,14 +162,18 @@
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/FluentUI/src/singleton.h",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/FluentUI/src/stdafx.h",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/app_session.h",
+				"D:/QTlearn/Ticketing-System-ver2-0/client-app/booking_dialog.h",
+				"D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/include/ui_booking_dialog.h",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/include/ui_mainwindow.h",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/include/ui_myorders_window.h",
+				"D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/include/ui_profile_window.h",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/include/ui_register_window.h",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/include/ui_search_window.h",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/moc_predefs.h",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/mainwindow.h",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/myorders_window.h",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/network_manager.h",
+				"D:/QTlearn/Ticketing-System-ver2-0/client-app/profile_window.h",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/register_window.h",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/search_window.h"
 			],
@@ -515,8 +523,10 @@
 			"expression" : "D:/QTlearn/Ticketing-System-ver2-0/client-app/*.ui",
 			"paths" : 
 			[
+				"D:/QTlearn/Ticketing-System-ver2-0/client-app/booking_dialog.ui",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/mainwindow.ui",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/myorders_window.ui",
+				"D:/QTlearn/Ticketing-System-ver2-0/client-app/profile_window.ui",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/register_window.ui",
 				"D:/QTlearn/Ticketing-System-ver2-0/client-app/search_window.ui"
 			],
@@ -533,23 +543,8 @@
 			"path" : "build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/.qtc/package-manager/auto-setup.cmake"
 		},
 		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/CMakeDetermineSystem.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/CMakeSystem.cmake.in"
-		},
-		{
 			"isGenerated" : true,
 			"path" : "build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/CMakeFiles/3.30.5/CMakeSystem.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/CMakeNinjaFindMake.cmake"
 		},
 		{
 			"isGenerated" : true,
@@ -564,256 +559,6 @@
 			"isCMake" : true,
 			"isExternal" : true,
 			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Platform/Windows-Initialize.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/CMakeDetermineCXXCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/CMakeDetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Platform/Windows-Determine-CXX.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/CMakeDetermineCompilerId.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/CMakeCompilerIdDetection.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/ADSP-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/ARMCC-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/ARMClang-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/AppleClang-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/Clang-DetermineCompilerInternal.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/Borland-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/Clang-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/Clang-DetermineCompilerInternal.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/Compaq-CXX-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/Cray-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/CrayClang-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/Embarcadero-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/Fujitsu-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/FujitsuClang-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/GHS-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/GNU-CXX-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/HP-CXX-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/IAR-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/IBMClang-CXX-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/Intel-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/IntelLLVM-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/LCC-CXX-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/MSVC-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/NVHPC-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/NVIDIA-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/OpenWatcom-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/OrangeC-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/PGI-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/PathScale-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/SCO-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/SunPro-CXX-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/TI-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/TIClang-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/Tasking-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/VisualAge-CXX-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/IBMCPP-CXX-DetermineVersionInternal.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/Watcom-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/XL-CXX-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/IBMCPP-CXX-DetermineVersionInternal.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/XLClang-CXX-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/zOS-CXX-DetermineCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/IBMCPP-CXX-DetermineVersionInternal.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/CMakeFindBinUtils.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Compiler/GNU-FindBinUtils.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/CMakeCXXCompiler.cmake.in"
 		},
 		{
 			"isGenerated" : true,
@@ -880,16 +625,6 @@
 			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Platform/Windows-GNU.cmake"
 		},
 		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/CMakeDetermineRCCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/CMakeRCCompiler.cmake.in"
-		},
-		{
 			"isGenerated" : true,
 			"path" : "build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/CMakeFiles/3.30.5/CMakeRCCompiler.cmake"
 		},
@@ -906,81 +641,12 @@
 		{
 			"isCMake" : true,
 			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/CMakeTestRCCompiler.cmake"
+			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Platform/Windows-GNU-CXX-ABI.cmake"
 		},
 		{
 			"isCMake" : true,
 			"isExternal" : true,
 			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/CMakeCommonLanguageInclude.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/CMakeTestCXXCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/CMakeTestCompilerCommon.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/CMakeDetermineCompilerABI.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Internal/CMakeDetermineLinkerId.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/CMakeParseImplicitIncludeInfo.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/CMakeParseImplicitLinkInfo.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/CMakeParseLibraryArchitecture.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/CMakeTestCompilerCommon.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/CMakeCXXCompilerABI.cpp"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/CMakeDetermineCompilerSupport.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Internal/FeatureTesting.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/CMakeCXXCompiler.cmake.in"
-		},
-		{
-			"isGenerated" : true,
-			"path" : "build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/CMakeFiles/3.30.5/CMakeCXXCompiler.cmake"
-		},
-		{
-			"isCMake" : true,
-			"isExternal" : true,
-			"path" : "C:/Qt/Tools/CMake_64/share/cmake-3.30/Modules/Platform/Windows-GNU-CXX-ABI.cmake"
 		},
 		{
 			"isExternal" : true,

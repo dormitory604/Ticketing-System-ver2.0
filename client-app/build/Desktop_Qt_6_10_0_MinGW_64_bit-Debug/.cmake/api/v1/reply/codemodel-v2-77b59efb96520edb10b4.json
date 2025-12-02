@@ -7,7 +7,7 @@
 				{
 					"build" : ".",
 					"hasInstallRule" : true,
-					"jsonFile" : "directory-.-Debug-29c63d210fc2c0bbc986.json",
+					"jsonFile" : "directory-.-Debug-9bbe110d0ceb8128c281.json",
 					"minimumCMakeVersion" : 
 					{
 						"string" : "3.16"
@@ -44,7 +44,7 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "client-app::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-client-app-Debug-9aa1bcbd40fd6e39b166.json",
+					"jsonFile" : "target-client-app-Debug-d69f72ab3d145cd59a24.json",
 					"name" : "client-app",
 					"projectIndex" : 0
 				},

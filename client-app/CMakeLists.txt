@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(client-app VERSION 0.1 LANGUAGES CXX)
 
-option(CLIENT_APP_USE_FAKE_SERVER "Enable mock responses without a backend" OFF)
+option(CLIENT_APP_USE_FAKE_SERVER "Enable mock responses without a backend" ON)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -40,6 +40,12 @@ set(PROJECT_SOURCES
         myorders_window.cpp
         myorders_window.h
         myorders_window.ui
+        profile_window.cpp
+        profile_window.h
+        profile_window.ui
+        booking_dialog.cpp
+        booking_dialog.h
+        booking_dialog.ui
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

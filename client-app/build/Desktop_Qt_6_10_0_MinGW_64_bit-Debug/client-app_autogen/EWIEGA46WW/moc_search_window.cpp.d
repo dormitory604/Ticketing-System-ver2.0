@@ -1,6 +1,8 @@
 D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/EWIEGA46WW/moc_search_window.cpp: D:/QTlearn/Ticketing-System-ver2-0/client-app/search_window.h \
   D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/moc_predefs.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/QJsonArray \
+  C:/Qt/6.10.0/mingw_64/include/QtCore/QJsonObject \
+  C:/Qt/6.10.0/mingw_64/include/QtCore/QStringList \
   C:/Qt/6.10.0/mingw_64/include/QtCore/q17memory.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/q20functional.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/q20iterator.h \
@@ -59,6 +61,7 @@ D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_b
   C:/Qt/6.10.0/mingw_64/include/QtCore/qiterator.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qjsonarray.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qjsondocument.h \
+  C:/Qt/6.10.0/mingw_64/include/QtCore/qjsonobject.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qjsonparseerror.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qjsonvalue.h \
   C:/Qt/6.10.0/mingw_64/include/QtCore/qlatin1stringview.h \

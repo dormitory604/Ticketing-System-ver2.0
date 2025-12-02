@@ -26,11 +26,14 @@ public:
     // 定义所有"发送"函数
     // 这是给UI界面调用的 (例如: on_loginButton_clicked)
     void sendLoginRequest(const QString& username, const QString& password);
-    void sendSearchRequest(const QString& origin, const QString& dest, const QString& date);
+    void sendSearchRequest(const QString& origin, const QString& dest, const QString& date,
+                           const QString& cabinClass = QString(),
+                           const QStringList& passengerTypes = {});
     void sendRegisterRequest(const QString& username, const QString& password);
     void bookFlightRequest(int userId, int flightId);
     void getMyOrdersRequest(int userId);
     void cancelOrderRequest(int bookingId);
+    void updateProfileRequest(int userId, const QString& username, const QString& password);
     // ... (注意，每个action都对应一个发送函数，如果后续要新增这里也要加)
 
 signals:
@@ -48,6 +51,8 @@ signals:
     void myOrdersResult(const QJsonArray& orders);
     void cancelOrderSuccess(const QString& message);
     void cancelOrderFailed(const QString& message);
+    void profileUpdateSuccess(const QString& message, const QJsonObject& userData);
+    void profileUpdateFailed(const QString& message);
     // ... (如果后续要加加在这里)
     void generalError(const QString& message);
 
@@ -76,6 +81,7 @@ private:
     void emitFakeBookingResponse(int userId, int flightId);
     void emitFakeOrdersResponse(int userId);
     void emitFakeCancelResponse(int bookingId);
+    void emitFakeProfileUpdateResponse(int userId, const QString& username);
 #endif
 };
 
