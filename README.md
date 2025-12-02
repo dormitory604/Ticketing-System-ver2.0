@@ -257,7 +257,7 @@ client-app
     ```
     
 
-#####3 `handleCancelOrder` (取消订单)
+##### `handleCancelOrder` (取消订单)
 
 - `action`: `"cancel_order"`
     
@@ -382,6 +382,47 @@ client-app
       ]
     }
     ```
+
+##### `handleAdminGetAllFlights` (查所有航班)
+
+- `action`: `"admin_get_all_flights"`
+
+- **C2S `data`:** `{}`
+
+- **S2C `data` (成功):**
+
+    ```
+    {
+      "status": "success",
+      "message": "查询所有航班成功",
+      "data": [
+        {
+          "flight_id": 101,
+          "flight_number": "CA101",
+          "origin": "北京",
+          "destination": "上海",
+          "departure_time": "2025-12-01T08:00:00",
+          "arrival_time": "2025-12-01T10:15:00",
+          "price": 850,
+          "seats": 180,
+          "remaining_seats": 42
+        },
+        {
+          "flight_id": 102,
+          "flight_number": "MU240",
+          "origin": "上海",
+          "destination": "广州",
+          "departure_time": "2025-12-05T14:30:00",
+          "arrival_time": "2025-12-05T17:00:00",
+          "price": 760,
+          "seats": 160,
+          "remaining_seats": 88
+        }
+      ]
+    }
+    ```
+
+
 
 ## 数据库表格文档(v1.0)
 ### 核心表格

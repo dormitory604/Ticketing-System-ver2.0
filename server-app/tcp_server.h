@@ -42,9 +42,23 @@ private:
 
     // 这是功能分发函数，看其中的action内容来决定调用哪个具体函数
     QJsonObject handleRequest(const QJsonObject& request);
-
+    // 以下为具体功能处理函数
+    // 通用函数
+    QJsonObject handleRegister(const QJsonObject& data);
     QJsonObject handleLogin(const QJsonObject& data);
+    // 客户端
     QJsonObject handleSearchFlights(const QJsonObject& data);
+    QJsonObject handleBookFlight(const QJsonObject& data);
+    QJsonObject handleGetMyOrders(const QJsonObject& data);
+    QJsonObject handleCancelOrder(const QJsonObject& data);
+    // 管理员端
+    QJsonObject handleAdminAddFlight(const QJsonObject& data);
+    QJsonObject handleAdminUpdateFlight(const QJsonObject& data);
+    QJsonObject handleAdminDeleteFlight(const QJsonObject& data);
+    QJsonObject handleAdminGetAllFlights();
+    QJsonObject handleAdminGetAllUsers();
+    QJsonObject handleAdminGetAllBookings();
+
     // 注意，每一个action或者说每一个具体功能都需要一个handle函数！！！！
 
     // 辅助函数，将JSON响应发回客户端
