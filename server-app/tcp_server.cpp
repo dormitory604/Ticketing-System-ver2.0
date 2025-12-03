@@ -28,6 +28,14 @@ void TcpServer::onNewConnection()
     // 利用Qt的信息与槽机制，在客户端连接后持续监听用户是否发了数据/断开连接
     connect(clientSocket, &QTcpSocket::readyRead, this, &TcpServer::onReadyRead);
     connect(clientSocket, &QTcpSocket::disconnected, this, &TcpServer::onDisconnected);
+    
+    // 设置5秒超时，如果客户端没有发送tag，则断开连接
+    QTimer::singleShot(5000, clientSocket, [clientSocket]() {
+        if (clientSocket->state() == QTcpSocket::ConnectedState && !clientSocket->property("tag_registered").toBool()) {
+            qWarning() << "客户端未在5秒内发送tag，断开连接:" << clientSocket->peerAddress().toString();
+            clientSocket->disconnectFromHost();
+        }
+    });
 }
 
 // 处理客户端发送的数据

@@ -23,6 +23,11 @@ public:
 
     void connectToServer(const QString& host, quint16 port);
 
+    // Tag注册功能
+    void sendTagRegistration(const QString& tag);
+    bool isTagRegistered() const;
+    QString generateUniqueTag() const;
+
     // 定义所有"发送"函数
     // 这是给UI界面调用的 (例如: on_loginButton_clicked)
     void sendLoginRequest(const QString& username, const QString& password);
@@ -41,6 +46,8 @@ signals:
     // 这是发给UI界面的 (例如: onLoginSuccess)
     void connected();
     void disconnected();
+    void tagRegistered();
+    void tagRegistrationFailed(const QString& message);
     void loginSuccess(const QJsonObject& userData);
     void loginFailed(const QString& message);
     void searchResults(const QJsonArray& flights);
@@ -71,6 +78,8 @@ private:
     NetworkManager& operator=(const NetworkManager&) = delete;
 
     QTcpSocket *m_socket;
+    bool m_tagRegistered;
+    QString m_clientTag;
 
     void sendJsonRequest(const QJsonObject& request);
 
