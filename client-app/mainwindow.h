@@ -24,6 +24,9 @@ public:
 private slots:
     void on_loginButton_clicked();
     void on_registerButton_clicked();
+    void onConnected();
+    void onTagRegistered();
+    void onTagRegistrationFailed(const QString& message);
     void onLoginSuccess(const QJsonObject& userData);
     void onLoginFailed(const QString& message);
     void onGeneralError(const QString& message);

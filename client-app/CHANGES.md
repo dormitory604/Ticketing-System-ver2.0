@@ -62,7 +62,140 @@
 - 对话框允许用户从候选列表或手动输入乘机人、选择托运行李额、选择支付方式，并使用 `QPainter` 随机生成二维码预览。
 - 点击“我已完成支付”后才启用“提交订单”；提交会发射 `bookingConfirmed` 信号，由 `SearchWindow` 转成 `NetworkManager::bookFlightRequest`，不向服务器新增任何字段。
 
+---
+
+## 多用户端升级 (v2.0)
+
+### 概览
+根据 `NEW.md` 规范，在保持原有功能框架不变的前提下，实现多客户端并发支持。引入 **Tag 机制** 为每个客户端分配唯一身份标识，确保服务器能够识别和管理多个同时连接的用户。
+
+### 升级要求
+- 严格遵循 `NEW.md` 中的连接流程规范
+- 保持所有现有业务接口不变
+- 自动化 tag 注册，用户无感知
+- 完全向后兼容原有功能
+
+### 主要改动
+
+#### 1. NetworkManager Tag 机制 (`network_manager.h/.cpp`)
+**新增公共接口：**
+- `sendTagRegistration(const QString& tag)` - 发送 tag 注册请求
+- `isTagRegistered() const` - 检查 tag 注册状态
+- `generateUniqueTag() const` - 生成唯一客户端标识
+
+**新增信号：**
+- `tagRegistered()` - tag 注册成功
+- `tagRegistrationFailed(const QString& message)` - tag 注册失败
+
+**核心逻辑变更：**
+- 构造函数初始化 `m_tagRegistered = false` 和 `m_clientTag`
+- `onConnected()` 自动生成唯一 tag 并发送注册请求
+- `onDisconnected()` 重置 tag 注册状态
+- `sendJsonRequest()` 增加 tag 注册状态检查，未注册时拒绝业务请求
+- `onReadyRead()` 优先处理 tag 注册响应（无 `action_response` 字段）
+
+**Tag 生成策略：**
+```cpp
+QString generateUniqueTag() const {
+    qint64 timestamp = QDateTime::currentMSecsSinceEpoch();
+    int random = QRandomGenerator::global()->bounded(1000, 9999);
+    return QString("client_%1_%2").arg(timestamp).arg(random);
+}
+```
+
+#### 2. MainWindow 连接流程优化 (`mainwindow.h/.cpp`)
+**新增槽函数：**
+- `onConnected()` - 处理服务器连接成功
+- `onTagRegistered()` - 处理 tag 注册成功
+- `onTagRegistrationFailed(const QString& message)` - 处理 tag 注册失败
+
+**UI 交互增强：**
+- 登录按钮点击前检查 tag 注册状态
+- 未注册时显示友好提示："正在与服务器建立连接，请稍后再试..."
+- tag 注册失败时显示错误对话框
+
+**信号连接更新：**
+```cpp
+connect(&NetworkManager::instance(), &NetworkManager::connected,
+        this, &MainWindow::onConnected);
+connect(&NetworkManager::instance(), &NetworkManager::tagRegistered,
+        this, &MainWindow::onTagRegistered);
+connect(&NetworkManager::instance(), &NetworkManager::tagRegistrationFailed,
+        this, &MainWindow::onTagRegistrationFailed);
+```
+
+#### 3. 连接时序规范
+**严格按照 NEW.md 要求的通信顺序：**
+
+1. **客户端启动** → `main.cpp` 自动连接服务器
+2. **连接成功** → 触发 `onConnected()` 信号
+3. **自动注册** → 发送第一条消息：`{"tag": "client_1701234567890_1234"}`
+4. **等待确认** → 服务器返回：`{"status": "success", "message": "Tag registered"}`
+5. **业务可用** → tag 注册成功后可发送正常业务请求
+
+**错误处理机制：**
+- 5秒超时自动断开未注册连接（服务器端）
+- 客户端显示连接状态和错误提示
+- 网络断开自动重置 tag 状态
+
+### 兼容性保证
+
+#### 现有功能完全不变
+- 所有业务接口：`login`, `register`, `search_flights`, `book_flight` 等
+- UI 界面和用户操作流程
+- 数据格式和协议规范
+- `AppSession` 会话管理
+
+#### 向后兼容
+- 原有 `USE_FAKE_SERVER` 模式继续支持
+- 本地模拟模式自动跳过 tag 注册
+- 服务器升级不影响客户端基本功能
+
+### 技术特性
+
+#### 多客户端支持
+- **唯一标识**：每个客户端生成唯一的 tag（时间戳+随机数）
+- **并发管理**：服务器通过 tag 区分不同客户端连接
+- **状态隔离**：每个客户端维护独立的连接状态和用户会话
+
+#### 自动化设计
+- **零配置**：用户无需手动操作 tag 注册
+- **透明处理**：tag 注册过程对用户完全透明
+- **智能重连**：断线重连时自动重新注册 tag
+
+#### 错误恢复
+- **连接超时**：服务器端 5 秒超时保护
+- **状态同步**：客户端实时同步连接状态
+- **用户友好**：提供清晰的状态提示和错误信息
+
+### 部署说明
+
+#### 编译要求
+- 需要链接 `Qt6::Core` 模块（用于 `QDateTime`, `QRandomGenerator`）
+- 现有 CMake 配置无需修改
+- 编译选项 `CLIENT_APP_USE_FAKE_SERVER` 继续有效
+
+#### 运行要求
+- 服务器端必须支持 tag 注册协议
+- 客户端会自动适配支持/不支持 tag 的服务器
+- 多客户端可同时连接同一服务器端口
+
+### 测试验证
+
+#### 功能测试
+1. **单客户端**：验证原有功能完全正常
+2. **多客户端**：验证多个客户端同时连接和使用
+3. **异常场景**：验证网络断开、服务器重启等异常情况
+
+#### 性能测试
+- 并发连接数测试
+- 长时间运行稳定性测试
+- 内存泄漏检测
+
+---
+
 ## 后续可选工作
 1. 根据最终 UI 设计补充 `search_window.ui` 与 `myorders_window.ui` 的布局细节与样式。
 2. 与服务器端约定响应字段后，进一步完善表格列（例如价格格式、状态颜色）。
 3. 为 `NetworkManager` 拆分更多失败信号（如 `searchFailed`, `ordersFailed`），减少对 `generalError` 的依赖。
+4. **多客户端优化**：添加连接状态指示器、重连机制、连接池管理等高级功能。
