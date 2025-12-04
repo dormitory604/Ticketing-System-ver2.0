@@ -11,6 +11,7 @@
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QDebug>
+#include <QQueue>
 
 class NetworkManager : public QObject
 {
@@ -80,6 +81,7 @@ private:
     QTcpSocket *m_socket;
     bool m_tagRegistered;
     QString m_clientTag;
+    QQueue<QString> m_pendingActions;
 
     void sendJsonRequest(const QJsonObject& request);
 

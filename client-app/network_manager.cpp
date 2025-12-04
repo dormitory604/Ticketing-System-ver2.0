@@ -69,6 +69,21 @@ void NetworkManager::onReadyRead()
 
     QString action = response["action_response"].toString();
 
+    if (!action.isEmpty() && !m_pendingActions.isEmpty() && m_pendingActions.head() == action) {
+        // 丢弃已匹配的动作，保持队列与响应同步
+        m_pendingActions.dequeue();
+    }
+
+    if (action.isEmpty()) {
+        if (response.contains("action")) {
+            action = response["action"].toString();
+        }
+        // 如果服务器没有返回action字段，则退回到本地记录的请求顺序
+        if (action.isEmpty() && !m_pendingActions.isEmpty()) {
+            action = m_pendingActions.dequeue();
+        }
+    }
+
     // 路由 "失败" 响应
     if (status == "error") {
         qWarning() << "服务器返回错误:" << message << " (Action: " << action << ")";
@@ -227,9 +242,15 @@ void NetworkManager::sendJsonRequest(const QJsonObject& request)
         return;
     }
 
+    QString actionName = request.value("action").toString();
+
     QJsonDocument doc(request);
     m_socket->write(doc.toJson());
     qDebug() << "发送JSON请求:" << request;
+
+    if (!actionName.isEmpty()) {
+        m_pendingActions.enqueue(actionName);
+    }
 #endif
 }
 
