@@ -81,3 +81,11 @@ CMakeLists.txt.user*
 .rcc/
 .uic/
 /build*/
+
+# 忽略 admin-app 下的垃圾
+build/
+.qtcreator/
+
+# 忽略通用的 CMake 临时文件
+CMakeLists.txt.user
+*.user

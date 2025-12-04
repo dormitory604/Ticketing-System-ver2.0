@@ -12,8 +12,13 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools Network)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools Network)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)
+
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS 
+    Core 
+    Network 
+    Widgets 
+    LinguistTools
+)
 
 set(TS_FILES client-app_en_US.ts)
 
@@ -78,7 +83,6 @@ target_link_libraries(client-app PRIVATE Qt${QT_VERSION_MAJOR}::Network)
 if(CLIENT_APP_USE_FAKE_SERVER)
     target_compile_definitions(client-app PRIVATE USE_FAKE_SERVER)
 endif()
-
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
