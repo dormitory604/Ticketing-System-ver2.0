@@ -178,9 +178,23 @@
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="addToFavoritesButton">
+        <property name="text">
+         <string>添加到收藏</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="myOrdersButton">
         <property name="text">
          <string>我的订单</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="myFavoritesButton">
+        <property name="text">
+         <string>我的收藏</string>
         </property>
        </widget>
       </item>

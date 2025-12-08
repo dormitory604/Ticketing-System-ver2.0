@@ -96,6 +96,7 @@ void TcpServer::onReadyRead()
 
         // 绑定 tag
         clients[socket].tag = tag;
+        socket->setProperty("tag_registered", true);
         qInfo() << "客户端注册tag成功:" << tag;
 
         // 回复注册成功

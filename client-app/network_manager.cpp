@@ -109,6 +109,15 @@ void NetworkManager::onReadyRead()
         else if (action == "update_profile") {
             emit profileUpdateFailed(message);
         }
+        else if (action == "add_favorite") {
+            emit addFavoriteFailed(message);
+        }
+        else if (action == "remove_favorite") {
+            emit removeFavoriteFailed(message);
+        }
+        else if (action == "get_my_favorites") {
+            emit generalError(message);
+        }
         else {
             emit generalError(message);
         }
@@ -142,6 +151,15 @@ void NetworkManager::onReadyRead()
     }
     else if (action == "update_profile") {
         emit profileUpdateSuccess(message, response["data"].toObject());
+    }
+    else if (action == "add_favorite") {
+        emit addFavoriteSuccess(message);
+    }
+    else if (action == "remove_favorite") {
+        emit removeFavoriteSuccess(message);
+    }
+    else if (action == "get_my_favorites") {
+        emit myFavoritesResult(response["data"].toArray());
     }
     /*
     else if (action == "admin_add_flight") {
@@ -385,6 +403,56 @@ void NetworkManager::cancelOrderRequest(int bookingId)
     sendJsonRequest(request);
 }
 
+void NetworkManager::addFavoriteRequest(int userId, int flightId)
+{
+#ifdef USE_FAKE_SERVER
+    emitFakeAddFavoriteResponse(userId, flightId);
+    return;
+#endif
+    QJsonObject data;
+    data["user_id"] = userId;
+    data["flight_id"] = flightId;
+
+    QJsonObject request;
+    request["action"] = "add_favorite";
+    request["data"] = data;
+
+    sendJsonRequest(request);
+}
+
+void NetworkManager::removeFavoriteRequest(int userId, int flightId)
+{
+#ifdef USE_FAKE_SERVER
+    emitFakeRemoveFavoriteResponse(userId, flightId);
+    return;
+#endif
+    QJsonObject data;
+    data["user_id"] = userId;
+    data["flight_id"] = flightId;
+
+    QJsonObject request;
+    request["action"] = "remove_favorite";
+    request["data"] = data;
+
+    sendJsonRequest(request);
+}
+
+void NetworkManager::getMyFavoritesRequest(int userId)
+{
+#ifdef USE_FAKE_SERVER
+    emitFakeFavoritesResponse(userId);
+    return;
+#endif
+    QJsonObject data;
+    data["user_id"] = userId;
+
+    QJsonObject request;
+    request["action"] = "get_my_favorites";
+    request["data"] = data;
+
+    sendJsonRequest(request);
+}
+
 #ifdef USE_FAKE_SERVER
 void NetworkManager::emitFakeLoginResponse(const QString& username)
 {
@@ -496,6 +564,58 @@ void NetworkManager::emitFakeProfileUpdateResponse(int userId, const QString &us
     QString message = QStringLiteral("个人信息已更新 (本地模拟)");
     QTimer::singleShot(120, this, [this, message, user]() {
         emit profileUpdateSuccess(message, user);
+    });
+}
+
+void NetworkManager::emitFakeAddFavoriteResponse(int userId, int flightId)
+{
+    QString message = QStringLiteral("航班 %1 已添加到收藏 (本地模拟)").arg(flightId);
+    QTimer::singleShot(100, this, [this, message]() {
+        emit addFavoriteSuccess(message);
+    });
+}
+
+void NetworkManager::emitFakeRemoveFavoriteResponse(int userId, int flightId)
+{
+    QString message = QStringLiteral("航班 %1 已从收藏中移除 (本地模拟)").arg(flightId);
+    QTimer::singleShot(100, this, [this, message]() {
+        emit removeFavoriteSuccess(message);
+    });
+}
+
+void NetworkManager::emitFakeFavoritesResponse(int userId)
+{
+    QJsonArray favorites;
+
+    QJsonObject favorite1;
+    favorite1["favorite_id"] = 1;
+    favorite1["user_id"] = userId;
+    favorite1["flight_id"] = 101;
+    favorite1["flight_number"] = QStringLiteral("CA101");
+    favorite1["origin"] = QStringLiteral("北京");
+    favorite1["destination"] = QStringLiteral("上海");
+    favorite1["departure_time"] = QStringLiteral("2025-12-01T08:00:00");
+    favorite1["arrival_time"] = QStringLiteral("2025-12-01T10:15:00");
+    favorite1["price"] = 850;
+    favorite1["created_at"] = QStringLiteral("2025-11-20T10:30:00");
+
+    QJsonObject favorite2;
+    favorite2["favorite_id"] = 2;
+    favorite2["user_id"] = userId;
+    favorite2["flight_id"] = 105;
+    favorite2["flight_number"] = QStringLiteral("MU240");
+    favorite2["origin"] = QStringLiteral("上海");
+    favorite2["destination"] = QStringLiteral("广州");
+    favorite2["departure_time"] = QStringLiteral("2025-12-05T14:30:00");
+    favorite2["arrival_time"] = QStringLiteral("2025-12-05T17:00:00");
+    favorite2["price"] = 760;
+    favorite2["created_at"] = QStringLiteral("2025-11-22T15:45:00");
+
+    favorites.append(favorite1);
+    favorites.append(favorite2);
+
+    QTimer::singleShot(150, this, [this, favorites]() {
+        emit myFavoritesResult(favorites);
     });
 }
 #endif // USE_FAKE_SERVER

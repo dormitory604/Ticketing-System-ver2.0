@@ -102,6 +102,7 @@ set(OLD_GLOB
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/EWIEGA46WW/moc_register_window.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/EWIEGA46WW/moc_search_window.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/mocs_compilation.cpp"
+  "D:/QTlearn/Ticketing-System-ver2-0/client-app/favorites_window.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/main.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/mainwindow.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/myorders_window.cpp"
@@ -192,6 +193,7 @@ set(OLD_GLOB
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/include/ui_register_window.h"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/include/ui_search_window.h"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/moc_predefs.h"
+  "D:/QTlearn/Ticketing-System-ver2-0/client-app/favorites_window.h"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/mainwindow.h"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/myorders_window.h"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/network_manager.h"
@@ -580,6 +582,7 @@ endif()
 file(GLOB_RECURSE NEW_GLOB LIST_DIRECTORIES false "D:/QTlearn/Ticketing-System-ver2-0/client-app/*.ui")
 set(OLD_GLOB
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/booking_dialog.ui"
+  "D:/QTlearn/Ticketing-System-ver2-0/client-app/favorites_window.ui"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/mainwindow.ui"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/myorders_window.ui"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/profile_window.ui"

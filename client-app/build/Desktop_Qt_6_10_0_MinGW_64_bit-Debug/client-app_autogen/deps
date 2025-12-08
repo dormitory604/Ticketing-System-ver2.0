@@ -660,6 +660,8 @@ client-app_autogen/timestamp: \
 	D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/CMakeFiles/3.30.5/CMakeRCCompiler.cmake \
 	D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/CMakeFiles/3.30.5/CMakeSystem.cmake \
 	D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/moc_predefs.h \
+	D:/QTlearn/Ticketing-System-ver2-0/client-app/favorites_window.cpp \
+	D:/QTlearn/Ticketing-System-ver2-0/client-app/favorites_window.h \
 	D:/QTlearn/Ticketing-System-ver2-0/client-app/main.cpp \
 	D:/QTlearn/Ticketing-System-ver2-0/client-app/mainwindow.cpp \
 	D:/QTlearn/Ticketing-System-ver2-0/client-app/mainwindow.h \
@@ -674,6 +676,7 @@ client-app_autogen/timestamp: \
 	D:/QTlearn/Ticketing-System-ver2-0/client-app/search_window.cpp \
 	D:/QTlearn/Ticketing-System-ver2-0/client-app/search_window.h \
 	D:/QTlearn/Ticketing-System-ver2-0/client-app/booking_dialog.ui \
+	D:/QTlearn/Ticketing-System-ver2-0/client-app/favorites_window.ui \
 	D:/QTlearn/Ticketing-System-ver2-0/client-app/mainwindow.ui \
 	D:/QTlearn/Ticketing-System-ver2-0/client-app/myorders_window.ui \
 	D:/QTlearn/Ticketing-System-ver2-0/client-app/profile_window.ui \

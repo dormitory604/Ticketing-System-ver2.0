@@ -40,6 +40,9 @@ public:
     void getMyOrdersRequest(int userId);
     void cancelOrderRequest(int bookingId);
     void updateProfileRequest(int userId, const QString& username, const QString& password);
+    void addFavoriteRequest(int userId, int flightId);
+    void removeFavoriteRequest(int userId, int flightId);
+    void getMyFavoritesRequest(int userId);
     // ... (注意，每个action都对应一个发送函数，如果后续要新增这里也要加)
 
 signals:
@@ -61,6 +64,11 @@ signals:
     void cancelOrderFailed(const QString& message);
     void profileUpdateSuccess(const QString& message, const QJsonObject& userData);
     void profileUpdateFailed(const QString& message);
+    void addFavoriteSuccess(const QString& message);
+    void addFavoriteFailed(const QString& message);
+    void removeFavoriteSuccess(const QString& message);
+    void removeFavoriteFailed(const QString& message);
+    void myFavoritesResult(const QJsonArray& favorites);
     // ... (如果后续要加加在这里)
     void generalError(const QString& message);
 
@@ -93,6 +101,9 @@ private:
     void emitFakeOrdersResponse(int userId);
     void emitFakeCancelResponse(int bookingId);
     void emitFakeProfileUpdateResponse(int userId, const QString& username);
+    void emitFakeAddFavoriteResponse(int userId, int flightId);
+    void emitFakeRemoveFavoriteResponse(int userId, int flightId);
+    void emitFakeFavoritesResponse(int userId);
 #endif
 };
 
