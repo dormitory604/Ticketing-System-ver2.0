@@ -4,51 +4,59 @@ project(client-app VERSION 0.1 LANGUAGES CXX)
 
 option(CLIENT_APP_USE_FAKE_SERVER "Enable mock responses without a backend" OFF)
 
-set(CMAKE_AUTOUIC ON)
+# QML 模式下不需要 AUTOUIC
+# set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools Network)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools Network Quick)
 
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS 
     Core 
     Network 
     Widgets 
     LinguistTools
+    Quick
+    QuickControls2
 )
 
 set(TS_FILES client-app_en_US.ts)
 
 set(PROJECT_SOURCES
-        main.cpp
-        mainwindow.cpp
-        mainwindow.h
-        mainwindow.ui
+        main_qml.cpp
+        qml_bridge.cpp
+        qml_bridge.h
         network_manager.cpp
         network_manager.h
         app_session.cpp
         app_session.h
-        register_window.cpp
-        register_window.h
-        register_window.ui
-        search_window.cpp
-        search_window.h
-        search_window.ui
-        myorders_window.cpp
-        myorders_window.h
-        myorders_window.ui
-        profile_window.cpp
-        profile_window.h
-        profile_window.ui
-        booking_dialog.cpp
-        booking_dialog.h
-        booking_dialog.ui
-        favorites_window.cpp
-        favorites_window.h
-        favorites_window.ui
+        qml.qrc
+        # 保留原有文件用于参考，但不参与编译
+        # main.cpp
+        # mainwindow.cpp
+        # mainwindow.h
+        # mainwindow.ui
+        # register_window.cpp
+        # register_window.h
+        # register_window.ui
+        # search_window.cpp
+        # search_window.h
+        # search_window.ui
+        # myorders_window.cpp
+        # myorders_window.h
+        # myorders_window.ui
+        # profile_window.cpp
+        # profile_window.h
+        # profile_window.ui
+        # booking_dialog.cpp
+        # booking_dialog.h
+        # booking_dialog.ui
+        # favorites_window.cpp
+        # favorites_window.h
+        # favorites_window.ui
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -79,9 +87,12 @@ else()
     qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
 
-target_link_libraries(client-app PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(client-app PRIVATE Qt${QT_VERSION_MAJOR}::Core)
 target_link_libraries(client-app PRIVATE Qt${QT_VERSION_MAJOR}::Network)
+target_link_libraries(client-app PRIVATE Qt${QT_VERSION_MAJOR}::Quick)
+target_link_libraries(client-app PRIVATE Qt${QT_VERSION_MAJOR}::QuickControls2)
+# 如果需要同时支持 Widgets（例如某些对话框），可以取消注释下面这行
+# target_link_libraries(client-app PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 
 if(CLIENT_APP_USE_FAKE_SERVER)
     target_compile_definitions(client-app PRIVATE USE_FAKE_SERVER)

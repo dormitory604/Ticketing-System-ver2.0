@@ -239,8 +239,153 @@ connect(&NetworkManager::instance(), &NetworkManager::tagRegistrationFailed,
 
 ---
 
+## Qt Quick (QML) UI 转换 (v3.0)
+
+### 概述
+项目已从 Qt Widgets 转换为 Qt Quick (QML) 界面，功能保持完全一致，使用更现代化的声明式 UI 框架。所有业务逻辑、网络通信和数据处理保持不变，仅 UI 层进行了重构。
+
+### 新增文件
+
+#### C++ 桥接类
+- `qml_bridge.h/.cpp` - QML 和 C++ 逻辑之间的桥接类，负责将所有业务逻辑暴露给 QML，使用 Qt 属性系统实现数据绑定
+
+#### QML 界面文件
+- `qml/main.qml` - 主应用窗口，使用 StackView 管理页面导航
+- `qml/LoginWindow.qml` - 登录窗口
+- `qml/RegisterWindow.qml` - 注册窗口
+- `qml/SearchWindow.qml` - 航班搜索与预订窗口
+- `qml/OrdersWindow.qml` - 我的订单窗口
+- `qml/FavoritesWindow.qml` - 我的收藏窗口
+- `qml/ProfileWindow.qml` - 个人资料窗口
+
+#### 资源与入口
+- `qml.qrc` - QML 资源文件，将 QML 文件打包到应用程序中
+- `main_qml.cpp` - QML 版本的主程序入口，使用 `QQmlApplicationEngine` 和 `QGuiApplication`
+
+### 主要改动
+
+#### 1. CMake 构建配置更新 (`CMakeLists.txt`)
+- **添加 Qt Quick 模块**：`find_package` 添加 `Quick` 和 `QuickControls2` 组件
+- **更新源文件列表**：使用 `main_qml.cpp` 替代 `main.cpp`，添加 `qml_bridge` 和 `qml.qrc`
+- **更新链接库**：链接 `Qt::Quick` 和 `Qt::QuickControls2`，移除了对 Widgets 的依赖（可选）
+- **禁用 AUTOUIC**：QML 模式不需要 UI 编译器
+
+#### 2. QmlBridge 桥接类设计 (`qml_bridge.h/.cpp`)
+**核心职责**：连接 C++ 后端和 QML 前端
+
+**属性（Q_PROPERTY）**：
+- `currentUsername`、`currentUserId`、`isLoggedIn` - 用户会话信息
+- `searchResults`、`myOrders`、`myFavorites` - 数据列表
+
+**槽函数**：
+- 业务操作：`login()`, `registerUser()`, `searchFlights()`, `bookFlight()` 等
+- 窗口管理：`showSearchWindow()`, `showOrdersWindow()` 等
+
+**信号连接**：
+- 自动连接所有 `NetworkManager` 信号到对应槽函数
+- 将操作结果通过信号转发给 QML 层
+
+#### 3. QML UI 设计特点
+- **现代化 Material 风格**：蓝色主题 (`#2196F3`)，圆角卡片式设计
+- **响应式布局**：使用 `ColumnLayout`、`RowLayout` 自动适配窗口大小
+- **流畅导航**：`StackView` 管理页面切换，支持前进/后退
+- **数据绑定**：QML 通过属性绑定自动更新 UI，无需手动刷新
+- **交互反馈**：按钮状态变化、消息提示、选中高亮等
+
+#### 4. 功能对照
+所有原有功能均已完整实现：
+
+| 功能 | Widgets 版本 | QML 版本 | 状态 |
+|------|-------------|---------|------|
+| 用户登录 | MainWindow | LoginWindow.qml | ✅ |
+| 用户注册 | RegisterWindow | RegisterWindow.qml | ✅ |
+| 航班搜索 | SearchWindow | SearchWindow.qml | ✅ |
+| 航班预订 | SearchWindow | SearchWindow.qml | ✅ |
+| 我的订单 | MyOrdersWindow | OrdersWindow.qml | ✅ |
+| 取消订单 | MyOrdersWindow | OrdersWindow.qml | ✅ |
+| 我的收藏 | FavoritesWindow | FavoritesWindow.qml | ✅ |
+| 添加/取消收藏 | SearchWindow/FavoritesWindow | SearchWindow.qml/FavoritesWindow.qml | ✅ |
+| 个人资料 | ProfileWindow | ProfileWindow.qml | ✅ |
+| 网络通信 | NetworkManager | 通过 QmlBridge | ✅ |
+
+### 架构优势
+
+#### 声明式 UI
+- QML 使用声明式语法，代码更简洁易读
+- 属性绑定自动处理数据更新，减少手动同步代码
+
+#### 性能优化
+- `QGuiApplication` 比 `QApplication` 更轻量
+- QML 引擎优化的渲染性能
+- 更适合移动设备（未来扩展）
+
+#### 易于扩展
+- 支持丰富的动画效果（NumberAnimation、PropertyAnimation）
+- 响应式设计，适配不同屏幕尺寸
+- 主题切换和国际化支持
+
+### 兼容性保证
+
+✅ **完全向后兼容**：
+- 所有业务逻辑保持不变（NetworkManager、AppSession）
+- 服务器通信协议不变
+- 数据库结构不变
+- 原有 Widgets 代码保留作为参考（已注释）
+
+### 使用说明
+
+#### 构建与运行
+1. CMakeLists.txt 已默认配置为 QML 模式
+2. 重新配置 CMake：`cmake ..`
+3. 编译项目：`cmake --build .` 或在 Qt Creator 中构建
+4. 运行应用程序即可看到新的 QML UI
+
+#### 切换回 Widgets 版本
+如需切换回 Widgets 版本：
+1. 在 `CMakeLists.txt` 中将 `main_qml.cpp` 改为 `main.cpp`
+2. 取消注释 Widgets 相关源文件，注释 QML 相关文件
+3. 将 `QGuiApplication` 改为 `QApplication`
+4. 重新构建
+
+#### 自定义样式
+- 修改各 `.qml` 文件中的 `color` 属性改变主题色
+- 调整 `Layout` 的 `spacing` 和 `anchors` 改变布局
+- 使用 Qt Quick 动画系统添加过渡效果
+- 可选：在 `main_qml.cpp` 中设置 `QQuickStyle::setStyle("Material")` 使用 Material 样式
+
+### 技术细节
+
+#### 页面导航流程
+```
+登录页 → 注册页（可返回）
+登录页 → 搜索页（登录成功后）
+搜索页 → 订单页/收藏页/资料页（可返回，使用 StackView.push/pop）
+```
+
+#### 数据绑定示例
+```qml
+Text {
+    text: "当前用户: " + (bridge ? bridge.currentUsername : "")
+}
+```
+当 `bridge.currentUsername` 改变时，文本自动更新，无需手动调用更新函数。
+
+### 未来扩展方向
+
+QML UI 为以下扩展提供了更好的基础：
+- 移动端应用（Android/iOS）- QML 原生支持
+- 更丰富的动画效果 - Qt Quick 动画系统
+- 更好的响应式设计 - Layout 自动适配
+- 主题切换功能 - 动态加载 QML 主题文件
+- 国际化支持 - QML 的 `qsTr()` 函数
+
+详细使用说明请参考 `QML_UI_README.md`。
+
+---
+
 ## 后续可选工作
 1. 根据最终 UI 设计补充 `search_window.ui` 与 `myorders_window.ui` 的布局细节与样式。
 2. 与服务器端约定响应字段后，进一步完善表格列（例如价格格式、状态颜色）。
 3. 为 `NetworkManager` 拆分更多失败信号（如 `searchFailed`, `ordersFailed`），减少对 `generalError` 的依赖。
 4. **多客户端优化**：添加连接状态指示器、重连机制、连接池管理等高级功能。
+5. **QML UI 增强**：添加更多动画效果、主题切换、响应式优化等。

@@ -95,6 +95,7 @@ set(OLD_GLOB
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/CMakeFiles/3.30.5/CompilerIdCXX/CMakeCXXCompilerId.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/EWIEGA46WW/moc_app_session.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/EWIEGA46WW/moc_booking_dialog.cpp"
+  "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/EWIEGA46WW/moc_favorites_window.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/EWIEGA46WW/moc_mainwindow.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/EWIEGA46WW/moc_myorders_window.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/EWIEGA46WW/moc_network_manager.cpp"
@@ -104,10 +105,12 @@ set(OLD_GLOB
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/mocs_compilation.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/favorites_window.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/main.cpp"
+  "D:/QTlearn/Ticketing-System-ver2-0/client-app/main_qml.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/mainwindow.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/myorders_window.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/network_manager.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/profile_window.cpp"
+  "D:/QTlearn/Ticketing-System-ver2-0/client-app/qml_bridge.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/register_window.cpp"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/search_window.cpp"
   )
@@ -187,6 +190,7 @@ set(OLD_GLOB
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/app_session.h"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/booking_dialog.h"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/include/ui_booking_dialog.h"
+  "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/include/ui_favorites_window.h"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/include/ui_mainwindow.h"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/include/ui_myorders_window.h"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/include/ui_profile_window.h"
@@ -198,6 +202,7 @@ set(OLD_GLOB
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/myorders_window.h"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/network_manager.h"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/profile_window.h"
+  "D:/QTlearn/Ticketing-System-ver2-0/client-app/qml_bridge.h"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/register_window.h"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/search_window.h"
   )
@@ -551,6 +556,13 @@ set(OLD_GLOB
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/FluentUI/src/Qt6/imports/FluentUI/Controls/FluWindow.qml"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/FluentUI/src/Qt6/imports/FluentUI/Controls/FluWindowDialog.qml"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/FluentUI/src/Qt6/imports/FluentUI/Controls/FluWindowResultLauncher.qml"
+  "D:/QTlearn/Ticketing-System-ver2-0/client-app/qml/FavoritesWindow.qml"
+  "D:/QTlearn/Ticketing-System-ver2-0/client-app/qml/LoginWindow.qml"
+  "D:/QTlearn/Ticketing-System-ver2-0/client-app/qml/OrdersWindow.qml"
+  "D:/QTlearn/Ticketing-System-ver2-0/client-app/qml/ProfileWindow.qml"
+  "D:/QTlearn/Ticketing-System-ver2-0/client-app/qml/RegisterWindow.qml"
+  "D:/QTlearn/Ticketing-System-ver2-0/client-app/qml/SearchWindow.qml"
+  "D:/QTlearn/Ticketing-System-ver2-0/client-app/qml/main.qml"
   )
 if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
   message("-- GLOB mismatch!")
@@ -562,6 +574,7 @@ file(GLOB_RECURSE NEW_GLOB LIST_DIRECTORIES false "D:/QTlearn/Ticketing-System-v
 set(OLD_GLOB
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/FluentUI/example/example.qrc"
   "D:/QTlearn/Ticketing-System-ver2-0/client-app/FluentUI/src/Qt5/imports/fluentui.qrc"
+  "D:/QTlearn/Ticketing-System-ver2-0/client-app/qml.qrc"
   )
 if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
   message("-- GLOB mismatch!")
