@@ -1,4 +1,5 @@
 D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/CMakeFiles/client-app.dir
+D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/CMakeFiles/client-app_qmlimportscan.dir
 D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/CMakeFiles/edit_cache.dir
 D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/CMakeFiles/rebuild_cache.dir
 D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/CMakeFiles/list_install_components.dir

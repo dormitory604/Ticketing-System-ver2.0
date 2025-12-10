@@ -6,6 +6,7 @@
 #include "myorders_window.h"
 #include "profile_window.h"
 #include "booking_dialog.h"
+#include "favorites_window.h"
 
 #include <QMessageBox>
 #include <QDate>
@@ -20,6 +21,7 @@ SearchWindow::SearchWindow(QWidget *parent)
     , ui(new Ui::SearchWindow)
     , m_ordersWindow(nullptr)
     , m_profileWindow(nullptr)
+    , m_favoritesWindow(nullptr)
 {
     ui->setupUi(this);
     ui->dateEdit->setDate(QDate::currentDate());
@@ -37,6 +39,10 @@ SearchWindow::SearchWindow(QWidget *parent)
             this, &SearchWindow::handleBookingSuccess);
     connect(&NetworkManager::instance(), &NetworkManager::bookingFailed,
             this, &SearchWindow::handleBookingFailed);
+    connect(&NetworkManager::instance(), &NetworkManager::addFavoriteSuccess,
+            this, &SearchWindow::handleAddFavoriteSuccess);
+    connect(&NetworkManager::instance(), &NetworkManager::addFavoriteFailed,
+            this, &SearchWindow::handleAddFavoriteFailed);
     connect(&NetworkManager::instance(), &NetworkManager::generalError,
             this, &SearchWindow::handleGeneralError);
 }
@@ -48,6 +54,9 @@ SearchWindow::~SearchWindow()
     }
     if (m_profileWindow) {
         m_profileWindow->deleteLater();
+    }
+    if (m_favoritesWindow) {
+        m_favoritesWindow->deleteLater();
     }
     delete ui;
 }
@@ -308,4 +317,37 @@ QStringList SearchWindow::passengerCandidates() const
     }
     candidates.removeDuplicates();
     return candidates;
+}
+
+void SearchWindow::on_myFavoritesButton_clicked()
+{
+    if (!m_favoritesWindow) {
+        m_favoritesWindow = new FavoritesWindow(this);
+        m_favoritesWindow->setUserId(AppSession::instance().userId());
+        m_favoritesWindow->setUsername(AppSession::instance().username());
+    }
+    m_favoritesWindow->show();
+    m_favoritesWindow->raise();
+    m_favoritesWindow->activateWindow();
+}
+
+void SearchWindow::on_addToFavoritesButton_clicked()
+{
+    int flightId = currentSelectedFlightId();
+    if (flightId <= 0) {
+        QMessageBox::warning(this, tr("提示"), tr("请先选择要收藏的航班"));
+        return;
+    }
+    
+    NetworkManager::instance().addFavoriteRequest(AppSession::instance().userId(), flightId);
+}
+
+void SearchWindow::handleAddFavoriteSuccess(const QString& message)
+{
+    QMessageBox::information(this, tr("成功"), message);
+}
+
+void SearchWindow::handleAddFavoriteFailed(const QString& message)
+{
+    QMessageBox::warning(this, tr("失败"), message);
 }

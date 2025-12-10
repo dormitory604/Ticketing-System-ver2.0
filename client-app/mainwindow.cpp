@@ -17,6 +17,12 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     // 绑定 NetworkManager 的信号到本窗口的槽函数
+    connect(&NetworkManager::instance(), &NetworkManager::connected,
+            this, &MainWindow::onConnected);
+    connect(&NetworkManager::instance(), &NetworkManager::tagRegistered,
+            this, &MainWindow::onTagRegistered);
+    connect(&NetworkManager::instance(), &NetworkManager::tagRegistrationFailed,
+            this, &MainWindow::onTagRegistrationFailed);
     connect(&NetworkManager::instance(), &NetworkManager::loginSuccess,
             this, &MainWindow::onLoginSuccess);
     connect(&NetworkManager::instance(), &NetworkManager::loginFailed,
@@ -40,6 +46,16 @@ MainWindow::~MainWindow()
 // 当用户点击“登录”按钮时
 void MainWindow::on_loginButton_clicked()
 {
+#ifdef USE_FAKE_SERVER
+    Q_UNUSED(this);
+#else
+    // 检查tag是否已注册
+    if (!NetworkManager::instance().isTagRegistered()) {
+        QMessageBox::warning(this, "连接中", "正在与服务器建立连接，请稍后再试...");
+        return;
+    }
+#endif
+
     QString user = ui->usernameLineEdit->text();
     QString pass = ui->passwordLineEdit->text();
 
@@ -83,4 +99,20 @@ void MainWindow::on_registerButton_clicked()
 void MainWindow::onGeneralError(const QString& message)
 {
     QMessageBox::critical(this, "网络错误", message);
+}
+
+// Tag注册相关槽函数
+void MainWindow::onConnected()
+{
+    qDebug() << "客户端已连接到服务器，等待tag注册...";
+}
+
+void MainWindow::onTagRegistered()
+{
+    qDebug() << "Tag注册成功，可以开始使用业务功能";
+}
+
+void MainWindow::onTagRegistrationFailed(const QString& message)
+{
+    QMessageBox::critical(this, "连接错误", QString("Tag注册失败: %1").arg(message));
 }
