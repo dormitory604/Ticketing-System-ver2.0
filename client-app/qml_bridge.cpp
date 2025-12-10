@@ -1,5 +1,6 @@
 #include "qml_bridge.h"
 #include <QDebug>
+#include <QVariant>
 
 QmlBridge::QmlBridge(QObject *parent)
     : QObject(parent)
@@ -144,9 +145,22 @@ void QmlBridge::onRegisterFailed(const QString& message)
     emit registerFailed(message);
 }
 
+QVariantList QmlBridge::jsonArrayToVariantList(const QJsonArray& jsonArray)
+{
+    QVariantList result;
+    for (const QJsonValue& value : jsonArray) {
+        if (value.isObject()) {
+            result.append(value.toObject().toVariantMap());
+        } else {
+            result.append(value.toVariant());
+        }
+    }
+    return result;
+}
+
 void QmlBridge::onSearchResults(const QJsonArray& flights)
 {
-    m_searchResults = flights;
+    m_searchResults = jsonArrayToVariantList(flights);
     emit searchResultsChanged();
     emit searchComplete();
 }
@@ -163,7 +177,7 @@ void QmlBridge::onBookingFailed(const QString& message)
 
 void QmlBridge::onMyOrdersResult(const QJsonArray& orders)
 {
-    m_myOrders = orders;
+    m_myOrders = jsonArrayToVariantList(orders);
     emit myOrdersChanged();
     emit ordersUpdated();
 }
@@ -182,7 +196,7 @@ void QmlBridge::onCancelOrderFailed(const QString& message)
 
 void QmlBridge::onMyFavoritesResult(const QJsonArray& favorites)
 {
-    m_myFavorites = favorites;
+    m_myFavorites = jsonArrayToVariantList(favorites);
     emit myFavoritesChanged();
     emit favoritesUpdated();
 }
@@ -232,4 +246,5 @@ void QmlBridge::onUserChanged()
     emit currentUsernameChanged();
     emit currentUserIdChanged();
 }
+
 

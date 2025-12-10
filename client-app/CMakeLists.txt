@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(client-app VERSION 0.1 LANGUAGES CXX)
 
-option(CLIENT_APP_USE_FAKE_SERVER "Enable mock responses without a backend" OFF)
+option(CLIENT_APP_USE_FAKE_SERVER "Enable mock responses without a backend" ON)
 
 # QML 模式下不需要 AUTOUIC
 # set(CMAKE_AUTOUIC ON)

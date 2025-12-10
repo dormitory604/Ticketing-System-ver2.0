@@ -7,6 +7,9 @@
         <file>qml/OrdersWindow.qml</file>
         <file>qml/FavoritesWindow.qml</file>
         <file>qml/ProfileWindow.qml</file>
+        <file>qml/BookingDialog.qml</file>
+        <file>qml/CalendarPicker.qml</file>
     </qresource>
 </RCC>
+
 

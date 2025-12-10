@@ -5,6 +5,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QString>
+#include <QVariantList>
 #include "network_manager.h"
 #include "app_session.h"
 
@@ -18,13 +19,13 @@ class QmlBridge : public QObject
     Q_PROPERTY(bool isLoggedIn READ isLoggedIn NOTIFY isLoggedInChanged)
     
     // 搜索相关
-    Q_PROPERTY(QJsonArray searchResults READ searchResults NOTIFY searchResultsChanged)
+    Q_PROPERTY(QVariantList searchResults READ searchResults NOTIFY searchResultsChanged)
     
     // 订单相关
-    Q_PROPERTY(QJsonArray myOrders READ myOrders NOTIFY myOrdersChanged)
+    Q_PROPERTY(QVariantList myOrders READ myOrders NOTIFY myOrdersChanged)
     
     // 收藏相关
-    Q_PROPERTY(QJsonArray myFavorites READ myFavorites NOTIFY myFavoritesChanged)
+    Q_PROPERTY(QVariantList myFavorites READ myFavorites NOTIFY myFavoritesChanged)
 
 public:
     explicit QmlBridge(QObject *parent = nullptr);
@@ -33,9 +34,9 @@ public:
     QString currentUsername() const { return AppSession::instance().username(); }
     int currentUserId() const { return AppSession::instance().userId(); }
     bool isLoggedIn() const { return AppSession::instance().userId() > 0; }
-    QJsonArray searchResults() const { return m_searchResults; }
-    QJsonArray myOrders() const { return m_myOrders; }
-    QJsonArray myFavorites() const { return m_myFavorites; }
+    QVariantList searchResults() const { return m_searchResults; }
+    QVariantList myOrders() const { return m_myOrders; }
+    QVariantList myFavorites() const { return m_myFavorites; }
 
 public slots:
     // 登录/注册
@@ -129,10 +130,14 @@ private slots:
     void onUserChanged();
 
 private:
-    QJsonArray m_searchResults;
-    QJsonArray m_myOrders;
-    QJsonArray m_myFavorites;
+    QVariantList m_searchResults;
+    QVariantList m_myOrders;
+    QVariantList m_myFavorites;
+    
+    // 辅助函数：将 QJsonArray 转换为 QVariantList
+    static QVariantList jsonArrayToVariantList(const QJsonArray& jsonArray);
 };
 
 #endif // QML_BRIDGE_H
+
 

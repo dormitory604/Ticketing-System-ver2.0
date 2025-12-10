@@ -8,7 +8,7 @@ ApplicationWindow {
     width: 1200
     height: 800
     visible: true
-    title: "SkyTravel - 机票预订系统"
+    title: "SkyTravel"
     
     property var bridge: qmlBridge
     

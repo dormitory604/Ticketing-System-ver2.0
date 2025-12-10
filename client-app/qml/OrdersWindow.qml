@@ -80,6 +80,8 @@ Rectangle {
                     border.width: 1
                     radius: 4
                     
+                    property var orderData: modelData || {}
+                    
                     RowLayout {
                         anchors.fill: parent
                         anchors.margins: 15
@@ -90,23 +92,23 @@ Rectangle {
                             spacing: 5
                             
                             Text {
-                                text: "订单号: " + (modelData.booking_id || "")
+                                text: "订单号: " + (orderData.booking_id || "")
                                 font.pixelSize: 16
                                 font.bold: true
                             }
                             
                             Text {
-                                text: (modelData.flight_number || "") + " | " + 
-                                      (modelData.origin || "") + " → " + (modelData.destination || "")
+                                text: (orderData.flight_number || "") + " | " + 
+                                      (orderData.origin || "") + " → " + (orderData.destination || "")
                                 font.pixelSize: 14
                                 color: "#666"
                             }
                             
                             Text {
-                                text: "状态: " + (modelData.status === "confirmed" ? "已确认" : 
-                                                  modelData.status === "cancelled" ? "已取消" : modelData.status || "")
+                                text: "状态: " + (orderData.status === "confirmed" ? "已确认" : 
+                                                  orderData.status === "cancelled" ? "已取消" : orderData.status || "")
                                 font.pixelSize: 14
-                                color: modelData.status === "confirmed" ? "#4CAF50" : "#f44336"
+                                color: orderData.status === "confirmed" ? "#4CAF50" : "#f44336"
                             }
                         }
                         
@@ -114,8 +116,8 @@ Rectangle {
                             Layout.preferredWidth: 100
                             Layout.preferredHeight: 35
                             text: "取消订单"
-                            enabled: modelData.status === "confirmed"
-                            visible: modelData.status === "confirmed"
+                            enabled: orderData.status === "confirmed"
+                            visible: orderData.status === "confirmed"
                             background: Rectangle {
                                 color: parent.enabled ? (parent.pressed ? "#f44336" : "#e57373") : "#cccccc"
                                 radius: 4
@@ -128,7 +130,9 @@ Rectangle {
                                 verticalAlignment: Text.AlignVCenter
                             }
                             onClicked: {
-                                bridge.cancelOrder(modelData.booking_id)
+                                if (orderData.booking_id) {
+                                    bridge.cancelOrder(orderData.booking_id)
+                                }
                             }
                         }
                     }
@@ -148,4 +152,5 @@ Rectangle {
         }
     }
 }
+
 

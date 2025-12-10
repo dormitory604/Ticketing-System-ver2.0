@@ -31,7 +31,7 @@ void NetworkManager::connectToServer(const QString& host, quint16 port)
         emit connected();
     });
 #else
-    qInfo() << "连接到服务器..." << host << ":" << port;
+    qInfo() << "连接到服务器" << host << ":" << port;
     m_socket->connectToHost(host, port);
 #endif
 }

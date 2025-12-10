@@ -79,6 +79,8 @@ Rectangle {
                     border.width: 1
                     radius: 4
                     
+                    property var favoriteData: modelData || {}
+                    
                     RowLayout {
                         anchors.fill: parent
                         anchors.margins: 15
@@ -89,27 +91,27 @@ Rectangle {
                             spacing: 5
                             
                             Text {
-                                text: modelData.flight_number || ""
+                                text: favoriteData.flight_number || ""
                                 font.pixelSize: 18
                                 font.bold: true
                                 color: "#2196F3"
                             }
                             
                             Text {
-                                text: (modelData.origin || "") + " → " + (modelData.destination || "")
+                                text: (favoriteData.origin || "") + " → " + (favoriteData.destination || "")
                                 font.pixelSize: 14
                                 color: "#666"
                             }
                             
                             Text {
-                                text: "收藏时间: " + (modelData.created_at || "")
+                                text: "收藏时间: " + formatDateTime(favoriteData.created_at || "")
                                 font.pixelSize: 12
                                 color: "#999"
                             }
                         }
                         
                         Text {
-                            text: "¥" + (modelData.price || 0)
+                            text: "¥" + (favoriteData.price || 0)
                             font.pixelSize: 24
                             font.bold: true
                             color: "#FF9800"
@@ -131,9 +133,25 @@ Rectangle {
                                 verticalAlignment: Text.AlignVCenter
                             }
                             onClicked: {
-                                bridge.removeFavorite(modelData.flight_id)
+                                if (favoriteData.flight_id) {
+                                    bridge.removeFavorite(favoriteData.flight_id)
+                                }
                             }
                         }
+                    }
+                    
+                    // 辅助函数：格式化日期时间
+                    function formatDateTime(dateTimeString) {
+                        if (!dateTimeString || dateTimeString === "") return ""
+                        var parts = dateTimeString.split("T")
+                        if (parts.length === 2) {
+                            var datePart = parts[0].split("-")
+                            var timePart = parts[1].substring(0, 5)
+                            if (datePart.length === 3) {
+                                return datePart[1] + "-" + datePart[2] + " " + timePart
+                            }
+                        }
+                        return dateTimeString
                     }
                 }
             }
@@ -144,4 +162,5 @@ Rectangle {
         bridge.getMyFavorites()
     }
 }
+
 

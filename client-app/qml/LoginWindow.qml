@@ -18,7 +18,7 @@ Rectangle {
         // 标题
         Text {
             Layout.alignment: Qt.AlignHCenter
-            text: "SkyTravel"
+            text: "乱世佳人的SkyTravel"
             font.pixelSize: 36
             font.bold: true
             color: "#2196F3"
@@ -136,4 +136,5 @@ Rectangle {
         }
     }
 }
+
 
