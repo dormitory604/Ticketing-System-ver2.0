@@ -34,7 +34,7 @@ void TcpServer::onNewConnection()
 void TcpServer::onReadyRead()
 {
     QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
-    if (!socket) return; //TO DO
+    if (!socket) return;
 
     QByteArray receivedData = socket->readAll();
     qDebug() << "收到原始数据:" << receivedData;
@@ -140,6 +140,9 @@ QJsonObject TcpServer::handleRequest(const QJsonObject& request)
     }
     if (action == "login") {
         return handleLogin(data);
+    }
+    if (action == "update_profile") {
+        return handleUpdateProfile(data);
     }
     if (action == "search_flights") {
         return handleSearchFlights(data);
@@ -272,66 +275,159 @@ QJsonObject TcpServer::handleLogin(const QJsonObject& data)
     }
 }
 
+QJsonObject TcpServer::handleUpdateProfile(const QJsonObject &data)
+{
+    int userId = data.value("user_id").toInt();
+    QString username = data.value("username").toString();
+    QString password = data.value("password").toString();
+
+    if (userId <= 0) {
+        return {
+            {"status", "error"},
+            {"message", "user_id 无效"},
+            {"data", QJsonValue()}
+        };
+    }
+
+    // 动态构造 SQL
+    QString sql = "UPDATE User SET ";
+    QList<QString> sets;
+    QList<QVariant> binds;
+
+    if (!username.isEmpty()) {
+        sets.append("username = ?");
+        binds.append(username);
+    }
+    if (!password.isEmpty()) {
+        sets.append("password = ?");
+        binds.append(password);
+    }
+
+    if (sets.isEmpty()) {
+        return {
+            {"status", "error"},
+            {"message", "无任何可更新字段"},
+            {"data", QJsonValue()}
+        };
+    }
+
+    sql += sets.join(", ");
+    sql += " WHERE user_id = ?";
+
+    binds.append(userId);
+
+    QSqlQuery query(DatabaseManager::instance().database());
+    query.prepare(sql);
+
+    for (const QVariant& v : binds)
+        query.addBindValue(v);
+
+    if (!query.exec()) {
+        // 处理 UNIQUE 冲突 (用户名已存在)
+        if (query.lastError().nativeErrorCode() == "19") {
+            return {
+                {"status", "error"},
+                {"message", QString("用户名 '%1' 已存在").arg(username)},
+                {"data", QJsonValue()}
+            };
+        }
+
+        return {
+            {"status", "error"},
+            {"message", "数据库更新失败：" + query.lastError().text()},
+            {"data", QJsonValue()}
+        };
+    }
+
+    return {
+        {"status", "success"},
+        {"message", "用户资料更新成功"},
+        {"data", QJsonValue()}
+    };
+}
+
 // 处理航班查询
 QJsonObject TcpServer::handleSearchFlights(const QJsonObject& data)
 {
-    // 可以按1/2/3个条件搜索
-    QString origin = data.value("origin").toString();
-    QString dest = data.value("destination").toString();
-    QString date = data.value("date").toString();
+    QString origin      = data.value("origin").toString();
+    QString destination = data.value("destination").toString();
+    QString date        = data.value("date").toString();     // YYYY-MM-DD
 
-    // 构造动态SQL查询语句
-    QString sql = "SELECT * FROM Flight WHERE 1=1 "; // 这里1=1就是确保WHERE为真，然后就可以在后面添加AND语句
-    QList<QVariant> binds;
+    // 构建 SQL
+    QString sql = R"(
+        SELECT flight_id, flight_number, model, origin, destination,
+               departure_time, arrival_time, price, remaining_seats
+        FROM Flight
+    )";
+
+    QStringList where;
+    QMap<QString, QVariant> binds;
 
     if (!origin.isEmpty()) {
-        sql += " AND origin = ? ";
-        binds.append(origin);
+        where << "origin = :origin";
+        binds[":origin"] = origin;
     }
-    if (!dest.isEmpty()) {
-        sql += " AND destination = ? ";
-        binds.append(dest);
+    if (!destination.isEmpty()) {
+        where << "destination = :destination";
+        binds[":destination"] = destination;
     }
     if (!date.isEmpty()) {
-        // 匹配 'YYYY-MM-DD'
-        sql += " AND DATE(departure_time) = ? ";
-        binds.append(date);
+        // departure_time LIKE '2025-12-05%'
+        where << "departure_time LIKE :date";
+        binds[":date"] = date + "%";
     }
 
-    // 按时间排序
+    if (!where.isEmpty()) {
+        sql += " WHERE " + where.join(" AND ");
+    }
+
     sql += " ORDER BY departure_time ASC";
 
-    // 这里执行查询
     QSqlQuery query(DatabaseManager::instance().database());
-    query.prepare(sql);
-    for(const QVariant& v : binds) {
-        query.addBindValue(v);
+    if (!query.prepare(sql)) {
+        return {
+            {"status", "error"},
+            {"message", "数据库 prepare 失败：" + query.lastError().text()},
+            {"data", QJsonValue()}
+        };
+    }
+
+    for (auto it = binds.begin(); it != binds.end(); ++it) {
+        query.bindValue(it.key(), it.value());
     }
 
     if (!query.exec()) {
-        return { /* 数据库错误响应 */ };
+        return {
+            {"status", "error"},
+            {"message", "数据库查询失败：" + query.lastError().text()},
+            {"data", QJsonValue()}
+        };
     }
 
     QJsonArray flights;
-    while(query.next()) {
-        QJsonObject flight;
-        flight["flight_id"] = query.value("flight_id").toInt();
-        flight["flight_number"] = query.value("flight_number").toString();
-        flight["origin"] = query.value("origin").toString();
-        flight["destination"] = query.value("destination").toString();
-        flight["departure_time"] = query.value("departure_time").toDateTime().toString(Qt::ISODate);
-        flight["arrival_time"] = query.value("arrival_time").toDateTime().toString(Qt::ISODate);
-        flight["price"] = query.value("price").toDouble();
-        flight["remaining_seats"] = query.value("remaining_seats").toInt();
-        flights.append(flight);
+
+    while (query.next()) {
+        QJsonObject f;
+        f["flight_id"]       = query.value("flight_id").toInt();
+        f["flight_number"]   = query.value("flight_number").toString();
+        f["model"]           = query.value("model").toString();
+        f["origin"]          = query.value("origin").toString();
+        f["destination"]     = query.value("destination").toString();
+        f["departure_time"]  = query.value("departure_time").toString();
+        f["arrival_time"]    = query.value("arrival_time").toString();
+        f["price"]           = query.value("price").toDouble();
+        f["remaining_seats"] = query.value("remaining_seats").toInt();
+
+        flights.append(f);
     }
 
     return {
         {"status", "success"},
         {"message", "查询成功"},
-        {"data", flights} // 返回航班数组
+        {"data", flights}
     };
 }
+
 
 // 预定航班
 QJsonObject TcpServer::handleBookFlight(const QJsonObject& data)
@@ -342,30 +438,40 @@ QJsonObject TcpServer::handleBookFlight(const QJsonObject& data)
     if (userId <= 0 || flightId <= 0) {
         return {
             {"status", "error"},
-            {"message", "参数错误"},
+            {"message", "user_id 或 flight_id 无效"},
             {"data", QJsonValue()}
         };
     }
 
     QSqlDatabase db = DatabaseManager::instance().database();
-    db.transaction();  // 开始事务
+    if (!db.transaction()) {
+        return {
+            {"status", "error"},
+            {"message", "无法开启事务：" + db.lastError().text()},
+            {"data", QJsonValue()}
+        };
+    }
 
-    // 1. 检查余票
+    // 1. 检查航班是否存在并读取剩余座位
     QSqlQuery q1(db);
-    q1.prepare("SELECT remaining_seats FROM Flight WHERE flight_id = ?");
-    q1.addBindValue(flightId);
+    q1.prepare(R"(
+        SELECT remaining_seats
+        FROM Flight
+        WHERE flight_id = :flight_id
+    )");
+    q1.bindValue(":flight_id", flightId);
 
     if (!q1.exec() || !q1.next()) {
         db.rollback();
         return {
             {"status", "error"},
-            {"message", "航班不存在"},
+            {"message", "航班不存在或查询失败：" + q1.lastError().text()},
             {"data", QJsonValue()}
         };
     }
 
-    int seats = q1.value(0).toInt();
-    if (seats <= 0) {
+    int remaining = q1.value("remaining_seats").toInt();
+    if (remaining <= 0) {
         db.rollback();
         return {
             {"status", "error"},
@@ -374,42 +480,64 @@ QJsonObject TcpServer::handleBookFlight(const QJsonObject& data)
         };
     }
 
-    // 2. 扣减余票
+    // 2. 扣减剩余座位（并发安全：必须 remaining_seats > 0 才扣）
     QSqlQuery q2(db);
-    q2.prepare("UPDATE Flight SET remaining_seats = remaining_seats - 1 WHERE flight_id = ?");
-    q2.addBindValue(flightId);
+    q2.prepare(R"(
+        UPDATE Flight
+        SET remaining_seats = remaining_seats - 1
+        WHERE flight_id = :flight_id
+          AND remaining_seats > 0
+    )");
+    q2.bindValue(":flight_id", flightId);
 
     if (!q2.exec()) {
         db.rollback();
         return {
             {"status", "error"},
-            {"message", "更新航班座位失败"},
+            {"message", "扣减座位失败：" + q2.lastError().text()},
             {"data", QJsonValue()}
         };
     }
 
-    // 3. 创建订单
+    if (q2.numRowsAffected() == 0) {
+        db.rollback();
+        return {
+            {"status", "error"},
+            {"message", "票已售罄"},
+            {"data", QJsonValue()}
+        };
+    }
+
+    // 3. 插入订单（状态：confirmed）
     QSqlQuery q3(db);
-    q3.prepare("INSERT INTO Booking (user_id, flight_id, status) VALUES (?, ?, 'confirmed')");
-    q3.addBindValue(userId);
-    q3.addBindValue(flightId);
+    q3.prepare(R"(
+        INSERT INTO Booking (user_id, flight_id, status)
+        VALUES (:user_id, :flight_id, 'confirmed')
+    )");
+    q3.bindValue(":user_id", userId);
+    q3.bindValue(":flight_id", flightId);
 
     if (!q3.exec()) {
         db.rollback();
         return {
             {"status", "error"},
-            {"message", "创建订单失败：" + q3.lastError().text()},
+            {"message", "订单创建失败：" + q3.lastError().text()},
             {"data", QJsonValue()}
         };
     }
 
-    // 获取新订单 ID
     int bookingId = q3.lastInsertId().toInt();
 
-    // 4. 全部成功 → 提交事务
-    db.commit();
+    if (!db.commit()) {
+        db.rollback();
+        return {
+            {"status", "error"},
+            {"message", "提交事务失败：" + db.lastError().text()},
+            {"data", QJsonValue()}
+        };
+    }
 
-    // 5. 返回成功 JSON
+    // 返回订单基础信息
     QJsonObject info;
     info["booking_id"] = bookingId;
     info["user_id"] = userId;
@@ -438,57 +566,61 @@ QJsonObject TcpServer::handleGetMyOrders(const QJsonObject& data)
 
     QSqlQuery query(DatabaseManager::instance().database());
 
-    // JOIN Booking 和 Flight，返回订单 + 航班信息
-    query.prepare(R"(
+    if (!query.prepare(R"(
         SELECT
-            Booking.booking_id,
-            Booking.status,
-            Booking.booking_time,
-            Flight.flight_id,
-            Flight.flight_number,
-            Flight.origin,
-            Flight.destination,
-            Flight.departure_time,
-            Flight.arrival_time
-        FROM Booking
-        JOIN Flight ON Booking.flight_id = Flight.flight_id
-        WHERE Booking.user_id = ?
-        ORDER BY Booking.booking_time DESC
-    )");
-
-    query.addBindValue(userId);
-
-    if (!query.exec()) {
+            b.booking_id,
+            b.flight_id,
+            b.status,
+            b.booking_time,
+            f.flight_number,
+            f.origin,
+            f.destination,
+            f.departure_time,
+            f.arrival_time,
+            f.price
+        FROM Booking b
+        JOIN Flight f ON b.flight_id = f.flight_id
+        WHERE b.user_id = :user_id
+        ORDER BY b.booking_time DESC
+    )"))
+    {
         return {
             {"status", "error"},
-            {"message", "数据库查询失败：" + query.lastError().text()},
+            {"message", "查询失败：" + query.lastError().text()},
             {"data", QJsonValue()}
         };
     }
 
-    QJsonArray orders;
+    query.bindValue(":user_id", userId);
+
+    if (!query.exec()) {
+        return {
+            {"status", "error"},
+            {"message", "查询失败：" + query.lastError().text()},
+            {"data", QJsonValue()}
+        };
+    }
+
+    QJsonArray arr;
 
     while (query.next()) {
-        QJsonObject obj;
+        QJsonObject item;
 
-        obj["booking_id"]     = query.value("booking_id").toInt();
-        obj["status"]         = query.value("status").toString();
-        obj["booking_time"]   = query.value("booking_time").toString();
+        item["booking_id"]     = query.value("booking_id").toInt();
+        item["flight_id"]      = query.value("flight_id").toInt();
+        item["status"]         = query.value("status").toString();
+        item["flight_number"]  = query.value("flight_number").toString();
+        item["origin"]         = query.value("origin").toString();
+        item["destination"]    = query.value("destination").toString();
+        item["departure_time"] = query.value("departure_time").toString();
 
-        obj["flight_id"]      = query.value("flight_id").toInt();
-        obj["flight_number"]  = query.value("flight_number").toString();
-        obj["origin"]         = query.value("origin").toString();
-        obj["destination"]    = query.value("destination").toString();
-        obj["departure_time"] = query.value("departure_time").toString();
-        obj["arrival_time"]   = query.value("arrival_time").toString();
-
-        orders.append(obj);
+        arr.append(item);
     }
 
     return {
         {"status", "success"},
         {"message", "查询成功"},
-        {"data", orders}
+        {"data", arr}
     };
 }
 
@@ -506,14 +638,33 @@ QJsonObject TcpServer::handleCancelOrder(const QJsonObject& data)
     }
 
     QSqlDatabase db = DatabaseManager::instance().database();
-    db.transaction();  // 开始事务
+    if (!db.transaction()) {
+        return {
+            {"status", "error"},
+            {"message", "无法开启事务：" + db.lastError().text()},
+            {"data", QJsonValue()}
+        };
+    }
 
-    // 1. 查询订单信息
+    // 1. 查询订单状态与 flight_id
     QSqlQuery q1(db);
-    q1.prepare("SELECT flight_id, status FROM Booking WHERE booking_id = ?");
-    q1.addBindValue(bookingId);
+    q1.prepare(R"(
+        SELECT flight_id, status
+        FROM Booking
+        WHERE booking_id = :booking_id
+    )");
+    q1.bindValue(":booking_id", bookingId);
 
-    if (!q1.exec() || !q1.next()) {
+    if (!q1.exec()) {
+        db.rollback();
+        return {
+            {"status", "error"},
+            {"message", "订单查询失败：" + q1.lastError().text()},
+            {"data", QJsonValue()}
+        };
+    }
+
+    if (!q1.next()) {
         db.rollback();
         return {
             {"status", "error"},
@@ -525,50 +676,64 @@ QJsonObject TcpServer::handleCancelOrder(const QJsonObject& data)
     int flightId = q1.value("flight_id").toInt();
     QString status = q1.value("status").toString();
 
-    // 2. 如果已经取消，直接返回
+    // 已取消不可重复取消
     if (status == "cancelled") {
         db.rollback();
         return {
             {"status", "error"},
-            {"message", "订单已取消，无需重复操作"},
+            {"message", "订单已取消"},
             {"data", QJsonValue()}
         };
     }
 
-    // 3. 更新订单状态为 cancelled
+    // 2. 将订单状态改为取消
     QSqlQuery q2(db);
-    q2.prepare("UPDATE Booking SET status = 'cancelled' WHERE booking_id = ?");
-    q2.addBindValue(bookingId);
+    q2.prepare(R"(
+        UPDATE Booking
+        SET status = 'cancelled'
+        WHERE booking_id = :booking_id
+    )");
+    q2.bindValue(":booking_id", bookingId);
 
     if (!q2.exec()) {
         db.rollback();
         return {
             {"status", "error"},
-            {"message", "订单状态更新失败"},
+            {"message", "更新订单状态失败：" + q2.lastError().text()},
             {"data", QJsonValue()}
         };
     }
 
-    // 4. 退回该航班的余票 remaining_seats + 1
+    // 3. 恢复航班剩余座位
     QSqlQuery q3(db);
-    q3.prepare("UPDATE Flight SET remaining_seats = remaining_seats + 1 WHERE flight_id = ?");
-    q3.addBindValue(flightId);
+    q3.prepare(R"(
+        UPDATE Flight
+        SET remaining_seats = remaining_seats + 1
+        WHERE flight_id = :flight_id
+    )");
+    q3.bindValue(":flight_id", flightId);
 
     if (!q3.exec()) {
         db.rollback();
         return {
             {"status", "error"},
-            {"message", "余票回退失败"},
+            {"message", "恢复座位失败：" + q3.lastError().text()},
             {"data", QJsonValue()}
         };
     }
 
-    // 5. 无错误，提交事务
-    db.commit();
+    if (!db.commit()) {
+        db.rollback();
+        return {
+            {"status", "error"},
+            {"message", "提交事务失败：" + db.lastError().text()},
+            {"data", QJsonValue()}
+        };
+    }
 
     return {
         {"status", "success"},
-        {"message", "订单已成功取消"},
+        {"message", "订单取消成功"},
         {"data", QJsonValue()}
     };
 }
@@ -577,15 +742,19 @@ QJsonObject TcpServer::handleCancelOrder(const QJsonObject& data)
 QJsonObject TcpServer::handleAdminAddFlight(const QJsonObject& data)
 {
     QString flightNumber   = data.value("flight_number").toString();
+    QString model          = data.value("model").toString();
     QString origin         = data.value("origin").toString();
     QString destination    = data.value("destination").toString();
     QString departureTime  = data.value("departure_time").toString();
     QString arrivalTime    = data.value("arrival_time").toString();
     double price           = data.value("price").toDouble();
-    int seats              = data.value("seats").toInt();
+    int totalSeats         = data.value("total_seats").toInt();
 
-    if (flightNumber.isEmpty() || origin.isEmpty() || destination.isEmpty() ||
-        departureTime.isEmpty() || arrivalTime.isEmpty() || seats <= 0)
+    // 参数校验
+    if (flightNumber.isEmpty() ||
+        origin.isEmpty() || destination.isEmpty() ||
+        departureTime.isEmpty() || arrivalTime.isEmpty() ||
+        totalSeats <= 0 || price <= 0)
     {
         return {
             {"status", "error"},
@@ -597,24 +766,25 @@ QJsonObject TcpServer::handleAdminAddFlight(const QJsonObject& data)
     QSqlQuery query(DatabaseManager::instance().database());
     query.prepare(R"(
         INSERT INTO Flight (
-            flight_number, origin, destination,
+            flight_number, model, origin, destination,
             departure_time, arrival_time,
-            price, seats, remaining_seats
+            total_seats, remaining_seats, price
         ) VALUES (
-            :flight_number, :origin, :destination,
+            :flight_number, :model, :origin, :destination,
             :departure_time, :arrival_time,
-            :price, :seats, :remaining_seats
+            :total_seats, :remaining_seats, :price
         )
     )");
 
     query.bindValue(":flight_number",   flightNumber);
-    query.bindValue(":origin",         origin);
-    query.bindValue(":destination",    destination);
-    query.bindValue(":departure_time", departureTime);
-    query.bindValue(":arrival_time",   arrivalTime);
-    query.bindValue(":price",          price);
-    query.bindValue(":seats",          seats);
-    query.bindValue(":remaining_seats", seats);   // 新航班剩余座位 = 总座位
+    query.bindValue(":model",           model);
+    query.bindValue(":origin",          origin);
+    query.bindValue(":destination",     destination);
+    query.bindValue(":departure_time",  departureTime);
+    query.bindValue(":arrival_time",    arrivalTime);
+    query.bindValue(":total_seats",     totalSeats);
+    query.bindValue(":remaining_seats", totalSeats);
+    query.bindValue(":price",           price);
 
     if (!query.exec()) {
         return {
@@ -624,41 +794,32 @@ QJsonObject TcpServer::handleAdminAddFlight(const QJsonObject& data)
         };
     }
 
-    int newFlightId = query.lastInsertId().toInt();
-
-    QJsonObject info;
-    info["flight_id"]       = newFlightId;
-    info["flight_number"]   = flightNumber;
-    info["origin"]          = origin;
-    info["destination"]     = destination;
-    info["departure_time"]  = departureTime;
-    info["arrival_time"]    = arrivalTime;
-    info["price"]           = price;
-    info["seats"]           = seats;
-    info["remaining_seats"] = seats;
-
     return {
         {"status", "success"},
         {"message", "航班添加成功"},
-        {"data", info}
+        {"data", QJsonValue()}
     };
 }
+
 
 // 管理员-更新航班
 QJsonObject TcpServer::handleAdminUpdateFlight(const QJsonObject& data)
 {
-    int flightId = data.value("flight_id").toInt();
-    QString flightNumber   = data.value("flight_number").toString();
-    QString origin         = data.value("origin").toString();
-    QString destination    = data.value("destination").toString();
-    QString departureTime  = data.value("departure_time").toString();
-    QString arrivalTime    = data.value("arrival_time").toString();
-    double price           = data.value("price").toDouble();
-    int seats              = data.value("seats").toInt();   // 总座位数（新值）
+    int flightId         = data.value("flight_id").toInt();
+    QString flightNumber = data.value("flight_number").toString();
+    QString origin       = data.value("origin").toString();
+    QString destination  = data.value("destination").toString();
+    QString departureTime= data.value("departure_time").toString();
+    QString arrivalTime  = data.value("arrival_time").toString();
+    double price         = data.value("price").toDouble();
+    int totalSeats       = data.value("total_seats").toInt();     // FIX: seats → total_seats
+    int remainingSeats   = data.value("remaining_seats").toInt();
 
-    if (flightId <= 0 || flightNumber.isEmpty() || origin.isEmpty() ||
-        destination.isEmpty() || departureTime.isEmpty() ||
-        arrivalTime.isEmpty() || seats <= 0)
+    // 参数检查
+    if (flightId <= 0 ||
+        flightNumber.isEmpty() || origin.isEmpty() || destination.isEmpty() ||
+        departureTime.isEmpty() || arrivalTime.isEmpty() ||
+        totalSeats <= 0 || remainingSeats < 0)
     {
         return {
             {"status", "error"},
@@ -667,16 +828,24 @@ QJsonObject TcpServer::handleAdminUpdateFlight(const QJsonObject& data)
         };
     }
 
-    QSqlDatabase db = DatabaseManager::instance().database();
-    db.transaction();  // 🔥 开始事务
+    QSqlQuery q1(DatabaseManager::instance().database());
+    q1.prepare(R"(
+        SELECT total_seats, remaining_seats
+        FROM Flight
+        WHERE flight_id = :flight_id
+    )");    // FIX: seats → total_seats
 
-    // 1. 查询旧座位数和剩余座位数
-    QSqlQuery q1(db);
-    q1.prepare("SELECT seats, remaining_seats FROM Flight WHERE flight_id = :id");
-    q1.bindValue(":id", flightId);
+    q1.bindValue(":flight_id", flightId);
 
-    if (!q1.exec() || !q1.next()) {
-        db.rollback();
+    if (!q1.exec()) {
+        return {
+            {"status", "error"},
+            {"message", "查询失败：" + q1.lastError().text()},
+            {"data", QJsonValue()}
+        };
+    }
+
+    if (!q1.next()) {
         return {
             {"status", "error"},
             {"message", "航班不存在"},
@@ -684,22 +853,30 @@ QJsonObject TcpServer::handleAdminUpdateFlight(const QJsonObject& data)
         };
     }
 
-    int oldSeats = q1.value("seats").toInt();
-    int oldRemaining = q1.value("remaining_seats").toInt();
+    int oldTotalSeats     = q1.value("total_seats").toInt();
+    int oldRemainingSeats = q1.value("remaining_seats").toInt();
 
-    // 2. 计算新的 remaining_seats
-    int newRemaining = oldRemaining + (seats - oldSeats);
-    if (newRemaining < 0) {
-        db.rollback();
+    // 剩余票数不能 > 总票数
+    if (remainingSeats > totalSeats) {
         return {
             {"status", "error"},
-            {"message", "剩余座位不能为负数，更新失败"},
+            {"message", "remaining_seats 不能大于 total_seats"},
             {"data", QJsonValue()}
         };
     }
 
-    // 3. 更新航班信息
-    QSqlQuery q2(db);
+    // 不能把 total_seats 调小到低于已售出票数
+    int sold = oldTotalSeats - oldRemainingSeats;
+    if (totalSeats < sold) {
+        return {
+            {"status", "error"},
+            {"message", "total_seats 不能小于已售出的票数"},
+            {"data", QJsonValue()}
+        };
+    }
+
+    // 更新航班
+    QSqlQuery q2(DatabaseManager::instance().database());
     q2.prepare(R"(
         UPDATE Flight SET
             flight_number   = :flight_number,
@@ -708,48 +885,33 @@ QJsonObject TcpServer::handleAdminUpdateFlight(const QJsonObject& data)
             departure_time  = :departure_time,
             arrival_time    = :arrival_time,
             price           = :price,
-            seats           = :seats,
+            total_seats     = :total_seats,        -- FIX
             remaining_seats = :remaining_seats
         WHERE flight_id = :flight_id
     )");
 
-    q2.bindValue(":flight_number", flightNumber);
-    q2.bindValue(":origin", origin);
-    q2.bindValue(":destination", destination);
-    q2.bindValue(":departure_time", departureTime);
-    q2.bindValue(":arrival_time", arrivalTime);
-    q2.bindValue(":price", price);
-    q2.bindValue(":seats", seats);
-    q2.bindValue(":remaining_seats", newRemaining);
-    q2.bindValue(":flight_id", flightId);
+    q2.bindValue(":flight_number",   flightNumber);
+    q2.bindValue(":origin",          origin);
+    q2.bindValue(":destination",     destination);
+    q2.bindValue(":departure_time",  departureTime);
+    q2.bindValue(":arrival_time",    arrivalTime);
+    q2.bindValue(":price",           price);
+    q2.bindValue(":total_seats",     totalSeats);        // FIX
+    q2.bindValue(":remaining_seats", remainingSeats);
+    q2.bindValue(":flight_id",       flightId);
 
     if (!q2.exec()) {
-        db.rollback();
         return {
             {"status", "error"},
-            {"message", "航班更新失败：" + q2.lastError().text()},
+            {"message", "数据库更新失败：" + q2.lastError().text()},
             {"data", QJsonValue()}
         };
     }
 
-    db.commit();
-
-    // 返回成功信息和更新后的航班数据
-    QJsonObject obj;
-    obj["flight_id"]       = flightId;
-    obj["flight_number"]   = flightNumber;
-    obj["origin"]          = origin;
-    obj["destination"]     = destination;
-    obj["departure_time"]  = departureTime;
-    obj["arrival_time"]    = arrivalTime;
-    obj["price"]           = price;
-    obj["seats"]           = seats;
-    obj["remaining_seats"] = newRemaining;
-
     return {
         {"status", "success"},
         {"message", "航班更新成功"},
-        {"data", obj}
+        {"data", QJsonValue()}
     };
 }
 
@@ -766,16 +928,24 @@ QJsonObject TcpServer::handleAdminDeleteFlight(const QJsonObject& data)
         };
     }
 
-    QSqlDatabase db = DatabaseManager::instance().database();
-    db.transaction();  // 🔥 开始事务
+    // 检查航班是否存在
+    QSqlQuery q1(DatabaseManager::instance().database());
+    q1.prepare(R"(
+        SELECT flight_id
+        FROM Flight
+        WHERE flight_id = :flight_id
+    )");
+    q1.bindValue(":flight_id", flightId);
 
-    // 1. 检查航班是否存在
-    QSqlQuery q1(db);
-    q1.prepare("SELECT flight_number FROM Flight WHERE flight_id = :id");
-    q1.bindValue(":id", flightId);
+    if (!q1.exec()) {
+        return {
+            {"status", "error"},
+            {"message", "查询失败：" + q1.lastError().text()},
+            {"data", QJsonValue()}
+        };
+    }
 
-    if (!q1.exec() || !q1.next()) {
-        db.rollback();
+    if (!q1.next()) {
         return {
             {"status", "error"},
             {"message", "航班不存在"},
@@ -783,57 +953,26 @@ QJsonObject TcpServer::handleAdminDeleteFlight(const QJsonObject& data)
         };
     }
 
-    QString flightNumber = q1.value("flight_number").toString();
+    // 删除航班
+    QSqlQuery q2(DatabaseManager::instance().database());
+    q2.prepare(R"(
+        DELETE FROM Flight
+        WHERE flight_id = :flight_id
+    )");
+    q2.bindValue(":flight_id", flightId);
 
-    // 2. 检查是否已有订单关联该航班
-    QSqlQuery q2(db);
-    q2.prepare("SELECT COUNT(*) FROM Booking WHERE flight_id = :id");
-    q2.bindValue(":id", flightId);
-
-    if (!q2.exec() || !q2.next()) {
-        db.rollback();
+    if (!q2.exec()) {
         return {
             {"status", "error"},
-            {"message", "数据库检查失败：" + q2.lastError().text()},
+            {"message", "删除失败：" + q2.lastError().text()},
             {"data", QJsonValue()}
         };
     }
-
-    int bookingCount = q2.value(0).toInt();
-    if (bookingCount > 0) {
-        db.rollback();
-        return {
-            {"status", "error"},
-            {"message", QString("无法删除：该航班已有 %1 个订单").arg(bookingCount)},
-            {"data", QJsonValue()}
-        };
-    }
-
-    // 3. 删除航班
-    QSqlQuery q3(db);
-    q3.prepare("DELETE FROM Flight WHERE flight_id = :id");
-    q3.bindValue(":id", flightId);
-
-    if (!q3.exec()) {
-        db.rollback();
-        return {
-            {"status", "error"},
-            {"message", "航班删除失败：" + q3.lastError().text()},
-            {"data", QJsonValue()}
-        };
-    }
-
-    db.commit();
-
-    // 返回成功信息
-    QJsonObject ret;
-    ret["flight_id"]     = flightId;
-    ret["flight_number"] = flightNumber;
 
     return {
         {"status", "success"},
         {"message", "航班删除成功"},
-        {"data", ret}
+        {"data", QJsonValue()}
     };
 }
 
@@ -862,7 +1001,7 @@ QJsonObject TcpServer::handleAdminGetAllUsers()
         QJsonObject obj;
         obj["user_id"]  = query.value("user_id").toInt();
         obj["username"] = query.value("username").toString();
-        obj["is_admin"] = query.value("is_admin").toInt(); // 0/1
+        obj["created_at"] = query.value("created_at").toString();
 
         users.append(obj);
     }
@@ -936,44 +1075,46 @@ QJsonObject TcpServer::handleAdminGetAllBookings()
 QJsonObject TcpServer::handleAdminGetAllFlights()
 {
     QSqlQuery query(DatabaseManager::instance().database());
-    query.prepare(R"(
-        SELECT
-            flight_id, flight_number, origin, destination,
-            departure_time, arrival_time,
-            price, seats, remaining_seats
+
+    // FIX: seats → total_seats
+    if (!query.exec(R"(
+        SELECT flight_id, flight_number, model, origin, destination,
+               departure_time, arrival_time,
+               total_seats, remaining_seats, price
         FROM Flight
         ORDER BY departure_time ASC
-    )");
-
-    if (!query.exec()) {
+    )"))
+    {
         return {
             {"status", "error"},
-            {"message", "查询航班失败：" + query.lastError().text()},
+            {"message", "查询失败：" + query.lastError().text()},
             {"data", QJsonValue()}
         };
     }
 
-    QJsonArray flights;
+    QJsonArray arr;
 
     while (query.next()) {
         QJsonObject obj;
+
         obj["flight_id"]       = query.value("flight_id").toInt();
         obj["flight_number"]   = query.value("flight_number").toString();
+        obj["model"]           = query.value("model").toString();
         obj["origin"]          = query.value("origin").toString();
         obj["destination"]     = query.value("destination").toString();
         obj["departure_time"]  = query.value("departure_time").toString();
         obj["arrival_time"]    = query.value("arrival_time").toString();
-        obj["price"]           = query.value("price").toDouble();
-        obj["seats"]           = query.value("seats").toInt();
+        obj["total_seats"]     = query.value("total_seats").toInt();      // FIX
         obj["remaining_seats"] = query.value("remaining_seats").toInt();
+        obj["price"]           = query.value("price").toDouble();
 
-        flights.append(obj);
+        arr.append(obj);
     }
 
     return {
         {"status", "success"},
-        {"message", "查询所有航班成功"},
-        {"data", flights}
+        {"message", "查询成功"},
+        {"data", arr}
     };
 }
 
