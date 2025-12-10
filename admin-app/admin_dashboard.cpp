@@ -43,8 +43,8 @@ AdminDashboard::~AdminDashboard()
 void AdminDashboard::setupTables()
 {
     // 设置航班表头
-    ui->flightTable->setColumnCount(7);
-    ui->flightTable->setHorizontalHeaderLabels({"ID", "航班号", "出发地", "目的地", "起飞时间", "价格", "余票"});
+    ui->flightTable->setColumnCount(8);
+    ui->flightTable->setHorizontalHeaderLabels({"ID", "航班号", "出发地", "目的地", "起飞时间", "到达时间", "价格", "余票"});
     ui->flightTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch); // 自适应宽度填满窗口
     ui->flightTable->setEditTriggers(QAbstractItemView::NoEditTriggers);  // 禁止直接双击表格编辑，只读
     ui->flightTable->setSelectionBehavior(QAbstractItemView::SelectRows);  // 点击时选中一整行
@@ -139,13 +139,14 @@ void AdminDashboard::on_btnEditFlight_clicked()
     QString no = ui->flightTable->item(currentRow, 1)->text();
     QString origin = ui->flightTable->item(currentRow, 2)->text();
     QString dest = ui->flightTable->item(currentRow, 3)->text();
-    QDateTime time = QDateTime::fromString(ui->flightTable->item(currentRow, 4)->text(), "yyyy-MM-dd HH:mm:ss");
-    double price = ui->flightTable->item(currentRow, 5)->text().toDouble();
-    int seats = ui->flightTable->item(currentRow, 6)->text().toInt();
+    QDateTime deptTime = QDateTime::fromString(ui->flightTable->item(currentRow, 4)->text(), "yyyy-MM-dd HH:mm:ss");
+    QDateTime arrTime = QDateTime::fromString(ui->flightTable->item(currentRow, 5)->text(), "yyyy-MM-dd HH:mm:ss");
+    double price = ui->flightTable->item(currentRow, 6)->text().toDouble();
+    int seats = ui->flightTable->item(currentRow, 7)->text().toInt();
 
     // 创建弹窗并填入旧数据
     FlightDialog dlg(this);
-    dlg.setFlightData(id, no, origin, dest, time, price, seats);
+    dlg.setFlightData(id, no, origin, dest, deptTime, arrTime, price, seats);
 
     // 显示弹窗
     if (dlg.exec() == QDialog::Accepted)
@@ -178,8 +179,9 @@ void AdminDashboard::updateFlightTable(const QJsonArray &flights)
         ui->flightTable->setItem(row, 2, new QTableWidgetItem(obj["origin"].toString()));
         ui->flightTable->setItem(row, 3, new QTableWidgetItem(obj["destination"].toString()));
         ui->flightTable->setItem(row, 4, new QTableWidgetItem(obj["departure_time"].toString()));
-        ui->flightTable->setItem(row, 5, new QTableWidgetItem(QString::number(obj["price"].toDouble())));
-        ui->flightTable->setItem(row, 6, new QTableWidgetItem(QString::number(obj["remaining_seats"].toInt())));
+        ui->flightTable->setItem(row, 5, new QTableWidgetItem(obj["arrival_time"].toString()));
+        ui->flightTable->setItem(row, 6, new QTableWidgetItem(QString::number(obj["price"].toDouble())));
+        ui->flightTable->setItem(row, 7, new QTableWidgetItem(QString::number(obj["remaining_seats"].toInt())));
     }
 }
 

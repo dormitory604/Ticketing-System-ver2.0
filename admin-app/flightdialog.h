@@ -19,6 +19,7 @@ public:
     //如果是编辑模式，调用这个函数把旧数据填进去
     void setFlightData(int id, const QString &no, const QString &origin,
                        const QString &dest, const QDateTime &time,
+                       const QDateTime &arrTime,
                        double price, int seats);
 
     // 用户点确定后，调用这个函数获取填好的数据

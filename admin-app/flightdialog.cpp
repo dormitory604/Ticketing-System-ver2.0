@@ -9,6 +9,8 @@ FlightDialog::FlightDialog(QWidget *parent) :
 
     // 设置日期时间编辑框默认为当前时间
     ui->dtpTime->setDateTime(QDateTime::currentDateTime());
+    // 设置到达时间默认往后推2小时
+    ui->dtpArrivalTime->setDateTime(QDateTime::currentDateTime().addSecs(7200));
 }
 
 FlightDialog::~FlightDialog()
@@ -19,6 +21,7 @@ FlightDialog::~FlightDialog()
 // 编辑模式：把旧数据填入输入框
 void FlightDialog::setFlightData(int id, const QString &no, const QString &origin,
                                  const QString &dest, const QDateTime &time,
+                                 const QDateTime &arrTime,
                                  double price, int seats)
 {
     m_flightId = id; // 记住ID，更新时需要用
@@ -26,6 +29,7 @@ void FlightDialog::setFlightData(int id, const QString &no, const QString &origi
     ui->txtOrigin->setText(origin);
     ui->txtDest->setText(dest);
     ui->dtpTime->setDateTime(time);
+    ui->dtpArrivalTime->setDateTime(arrTime);
     ui->spinPrice->setValue(price);
     ui->spinSeats->setValue(seats);
 
@@ -46,8 +50,9 @@ QJsonObject FlightDialog::getFlightData() const
     obj["origin"] = ui->txtOrigin->text();
     obj["destination"] = ui->txtDest->text();
     obj["departure_time"] = ui->dtpTime->dateTime().toString("yyyy-MM-dd HH:mm:ss");
+    obj["arrival_time"] = ui->dtpArrivalTime->dateTime().toString("yyyy-MM-dd HH:mm:ss");
     obj["price"] = ui->spinPrice->value();
-    obj["remaining_seats"] = ui->spinSeats->value();
+    obj["seats"] = ui->spinSeats->value();
 
     return obj;
 }
