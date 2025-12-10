@@ -16,3 +16,5 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_subdirectory(client-app)
 add_subdirectory(server-app)
 add_subdirectory(admin-app)
+
+#add_subdirectory(test)

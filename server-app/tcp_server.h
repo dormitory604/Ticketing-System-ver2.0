@@ -47,6 +47,7 @@ private:
     // 通用函数
     QJsonObject handleRegister(const QJsonObject& data);
     QJsonObject handleLogin(const QJsonObject& data);
+    QJsonObject handleUpdateProfile(const QJsonObject& data);
     // 客户端
     QJsonObject handleSearchFlights(const QJsonObject& data);
     QJsonObject handleBookFlight(const QJsonObject& data);

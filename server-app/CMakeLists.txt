@@ -16,7 +16,7 @@ add_executable(server-app
   main.cpp
   database_manager.h
   tcp_server.h
-  tcp_server.h tcp_server.cpp
+  tcp_server.cpp
 )
 
 target_link_libraries(server-app PRIVATE
