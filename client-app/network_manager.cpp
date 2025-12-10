@@ -241,7 +241,7 @@ QString NetworkManager::generateUniqueTag() const
     return QString("client_%1_%2").arg(timestamp).arg(random);
 }
 
-// 发送JSON的通用函
+// 发送JSON的通用函数
 void NetworkManager::sendJsonRequest(const QJsonObject& request)
 {
 #ifdef USE_FAKE_SERVER
