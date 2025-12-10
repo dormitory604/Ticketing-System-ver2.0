@@ -111,14 +111,9 @@ void NetworkManager::sendAdminLoginRequest(const QString& username, const QStrin
 // 获取航班
 void NetworkManager::sendGetAllFlightsRequest()
 {
-    QJsonObject data;
-    // 根据协议，search_flights 如果条件为空，就返回所有航班
-    data["origin"] = "";
-    data["destination"] = "";
-
     QJsonObject request;
-    request["action"] = "search_flights";  // 对应server-app中的handleSearchFlights，表示这是航班查询操作
-    request["data"] = data;
+    request["action"] = "admin_get_all_flights";
+    request["data"] = QJsonObject(); // 这个接口不需要 data 参数
 
     send(request);
 }

@@ -24,8 +24,9 @@ void FlightDialog::setFlightData(int id, const QString &no, const QString &model
                                  const QDateTime &deptTime, const QDateTime &arrTime,
                                  double price, int totalSeats, int remainingSeats)
 {
-    m_flightId = id; // 记住ID，更新时需要用
-    m_remainingSeats = remainingSeats; // 记住当前的余票
+    m_flightId = id;  // 记住ID，更新时需要用
+    m_remainingSeats = remainingSeats;  // 记住当前的余票
+    m_oldTotalSeats = totalSeats;  // 记住原本的总座位数
     ui->txtFlightNum->setText(no);
     ui->txtModel->setText(model);
     ui->txtOrigin->setText(origin);
@@ -56,8 +57,28 @@ QJsonObject FlightDialog::getFlightData() const
     obj["departure_time"] = ui->dtpTime->dateTime().toString("yyyy-MM-dd HH:mm:ss");
     obj["arrival_time"] = ui->dtpArrivalTime->dateTime().toString("yyyy-MM-dd HH:mm:ss");
     obj["price"] = ui->spinPrice->value();
-    obj["total_seats"] = ui->spinSeats->value();
-    obj["remaining_seats"] = m_remainingSeats;
+
+    // 获取新的总座位数
+    int newTotalSeats = ui->spinSeats->value();
+    obj["total_seats"] = newTotalSeats;
+
+    // 如果是添加模式(id=-1)，Server会自动把余票设为总票数
+    // 如果是修改模式，需要计算：新余票 = 旧余票 + (新总座 - 旧总座)
+    if (m_flightId != -1)
+    {
+        int diff = newTotalSeats - m_oldTotalSeats;
+        int newRemaining = m_remainingSeats + diff;
+
+        // 防止出现负数
+        if (newRemaining < 0) newRemaining = 0;
+
+        obj["remaining_seats"] = newRemaining;
+    }
+    else
+    {
+        // 添加模式
+        obj["remaining_seats"] = newTotalSeats;
+    }
 
     return obj;
 }

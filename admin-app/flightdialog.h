@@ -28,7 +28,8 @@ public:
 private:
     Ui::FlightDialog *ui;
     int m_flightId = -1; // 存储航班ID，如果是添加模式则为-1
-    int m_remainingSeats = 0; // 暂存余票
+    int m_remainingSeats = 0;  // 暂存余票
+    int m_oldTotalSeats = 0;  // 暂存原本的总座位数，用来计算差值
 };
 
 #endif // FLIGHTDIALOG_H
