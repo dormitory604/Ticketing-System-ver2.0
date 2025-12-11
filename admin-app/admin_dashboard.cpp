@@ -73,13 +73,13 @@ void AdminDashboard::on_btnRefresh_clicked()
     // 延迟200毫秒查用户
     QTimer::singleShot(200, [this]()
     {
-        // NetworkManager::instance().sendAdminGetAllUsersRequest();
+        NetworkManager::instance().sendAdminGetAllUsersRequest();
     });
 
     // 延迟400毫秒查订单
     QTimer::singleShot(400, [this]()
     {
-        // NetworkManager::instance().sendAdminGetAllBookingsRequest();
+        NetworkManager::instance().sendAdminGetAllBookingsRequest();
     });
 }
 
