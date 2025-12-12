@@ -46,15 +46,15 @@ AdminDashboard::~AdminDashboard()
 void AdminDashboard::setupTables()
 {
     // 设置航班表头
-    ui->flightTable->setColumnCount(9);
-    ui->flightTable->setHorizontalHeaderLabels({"ID", "航班号", "机型", "出发地", "目的地", "起飞时间", "到达时间", "价格", "总座/余票"});
+    ui->flightTable->setColumnCount(10);
+    ui->flightTable->setHorizontalHeaderLabels({"ID", "航班号", "机型", "出发地", "目的地", "起飞时间", "到达时间", "价格", "总座/余票", "状态"});
     ui->flightTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch); // 自适应宽度填满窗口
     ui->flightTable->setEditTriggers(QAbstractItemView::NoEditTriggers);  // 禁止直接双击表格编辑，只读
     ui->flightTable->setSelectionBehavior(QAbstractItemView::SelectRows);  // 点击时选中一整行
 
     // 设置用户表头
-    ui->userTable->setColumnCount(3);
-    ui->userTable->setHorizontalHeaderLabels({"ID", "用户名", "创建时间"});
+    ui->userTable->setColumnCount(4);
+    ui->userTable->setHorizontalHeaderLabels({"ID", "用户名", "创建时间", "身份"});
     ui->userTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     ui->userTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     ui->userTable->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -97,6 +97,15 @@ void AdminDashboard::on_btnDeleteFlight_clicked()
         return;
     }
 
+    // 检查是否已删除
+    // 获取状态列的文本
+    QString status = ui->flightTable->item(currentRow, 9)->text();
+    if (status == "已删除")
+    {
+        QMessageBox::warning(this, "操作无效", "该航班已删除，无需重复操作！");
+        return;
+    }
+
     // 获取该行第一列（ID列）的内容
     int flightId = ui->flightTable->item(currentRow, 0)->text().toInt();
 
@@ -133,6 +142,14 @@ void AdminDashboard::on_btnEditFlight_clicked()
     if (currentRow < 0)
     {
         QMessageBox::warning(this, "提示", "请先选择要修改的航班！");
+        return;
+    }
+
+    // 检查是否已删除，已删除的航班不能修改
+    QString status = ui->flightTable->item(currentRow, 9)->text();
+    if (status == "已删除")
+    {
+        QMessageBox::warning(this, "操作无效", "已删除的航班无法修改！");
         return;
     }
 
@@ -196,6 +213,31 @@ void AdminDashboard::updateFlightTable(const QJsonArray &flights)
         int total = obj["total_seats"].toInt();
         int remain = obj["remaining_seats"].toInt();
         ui->flightTable->setItem(row, 8, new QTableWidgetItem(QString("%1 / %2").arg(total).arg(remain)));
+
+        // 处理 is_deleted 状态
+        int isDeleted = obj["is_deleted"].toInt();
+        QTableWidgetItem *statusItem;
+
+        if (isDeleted == 1)
+        {
+            statusItem = new QTableWidgetItem("已删除");
+            // 将这一行的所有单元格文字设为灰色
+            for (int col = 0; col <= 8; ++col)
+            {
+                if (ui->flightTable->item(row, col))
+                {
+                    ui->flightTable->item(row, col)->setForeground(Qt::gray);
+                }
+            }
+            statusItem->setForeground(Qt::gray); // 状态列也设为灰色
+        }
+        else
+        {
+            statusItem = new QTableWidgetItem("正常");
+            statusItem->setForeground(QColor("#52c41a")); // 正常显示为绿色
+        }
+
+        ui->flightTable->setItem(row, 9, statusItem); // 填入第10列
     }
 }
 
@@ -215,6 +257,23 @@ void AdminDashboard::updateUserTable(const QJsonArray &users)
         ui->userTable->setItem(row, 0, new QTableWidgetItem(QString::number(obj["user_id"].toInt())));
         ui->userTable->setItem(row, 1, new QTableWidgetItem(obj["username"].toString()));
         ui->userTable->setItem(row, 2, new QTableWidgetItem(obj["created_at"].toString()));
+
+        // 判断身份
+        int isAdmin = obj["is_admin"].toInt();
+        QTableWidgetItem *roleItem;
+
+        if (isAdmin == 1)
+        {
+            roleItem = new QTableWidgetItem("管理员");
+            // 管理员换成蓝色
+            roleItem->setForeground(QColor("#1890ff"));
+        }
+        else
+        {
+            roleItem = new QTableWidgetItem("普通用户");
+            roleItem->setForeground(Qt::black);
+        }
+        ui->userTable->setItem(row, 3, roleItem); // 填入第4列
     }
 }
 
@@ -234,7 +293,38 @@ void AdminDashboard::updateBookingTable(const QJsonArray &bookings)
         ui->bookingTable->setItem(row, 0, new QTableWidgetItem(QString::number(obj["booking_id"].toInt())));
         ui->bookingTable->setItem(row, 1, new QTableWidgetItem(QString::number(obj["user_id"].toInt())));
         ui->bookingTable->setItem(row, 2, new QTableWidgetItem(QString::number(obj["flight_id"].toInt())));
-        ui->bookingTable->setItem(row, 3, new QTableWidgetItem(obj["status"].toString()));
+
+        // 1. 获取两个核心状态
+        int isFlightDeleted = obj["is_deleted"].toInt(); // 航班是否被删除
+        QString dbStatus = obj["status"].toString(); // 数据库里的订单
+
+        QString displayStatus;
+        QTableWidgetItem *statusItem;
+
+        // 2. 逻辑判断
+        // 优先级 1: 先判断 is_deleted
+        if (isFlightDeleted == 1)
+        {
+            displayStatus = "航班已失效";
+            statusItem = new QTableWidgetItem(displayStatus);
+            statusItem->setForeground(Qt::red); // 红色高亮，提示异常
+        }
+        // 优先级 2: 再判断是否 cancelled
+        else if (dbStatus == "cancelled")
+        {
+            displayStatus = "已取消";
+            statusItem = new QTableWidgetItem(displayStatus);
+            statusItem->setForeground(Qt::gray); // 灰色，表示无效
+        }
+        // 优先级 3: 最后才是 confirmed
+        else
+        {
+            displayStatus = "已确认"; // confirmed
+            statusItem = new QTableWidgetItem(displayStatus);
+            statusItem->setForeground(QColor("#52c41a")); // 绿色，正常
+        }
+
+        ui->bookingTable->setItem(row, 3, statusItem);
     }
 }
 

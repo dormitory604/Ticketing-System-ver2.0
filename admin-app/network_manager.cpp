@@ -257,20 +257,21 @@ void NetworkManager::onReadyRead()
             // 拿出数组中的第一列，查看是什么列表
             QJsonObject firstItem = arr.first().toObject();
 
-            // 航班列表特征: 有 "flight_number"
-            if (firstItem.contains("flight_number"))
+            // 1. 先判断 booking_id (最独特的字段)
+            if (firstItem.contains("booking_id"))
             {
-                emit allFlightsReceived(arr);
+                emit allBookingsReceived(arr);
             }
-            // 用户列表特征: 有 "username" 但没有 "flight_number"
+            // 2. 再判断 username (防止用户表也有干扰)
             else if (firstItem.contains("username"))
             {
                 emit allUsersReceived(arr);
             }
-            // 订单列表特征: 有 "booking_id"
-            else if (firstItem.contains("booking_id"))
+            // 3. 最后判断 flight_number
+            // 只有当它既不是订单、也不是用户时，才认为是纯航班列表
+            else if (firstItem.contains("flight_number"))
             {
-                emit allBookingsReceived(arr);
+                emit allFlightsReceived(arr);
             }
         }
 
