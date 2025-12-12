@@ -43,8 +43,8 @@ AdminDashboard::~AdminDashboard()
 void AdminDashboard::setupTables()
 {
     // 设置航班表头
-    ui->flightTable->setColumnCount(7);
-    ui->flightTable->setHorizontalHeaderLabels({"ID", "航班号", "出发地", "目的地", "起飞时间", "价格", "余票"});
+    ui->flightTable->setColumnCount(9);
+    ui->flightTable->setHorizontalHeaderLabels({"ID", "航班号", "机型", "出发地", "目的地", "起飞时间", "到达时间", "价格", "总座/余票"});
     ui->flightTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch); // 自适应宽度填满窗口
     ui->flightTable->setEditTriggers(QAbstractItemView::NoEditTriggers);  // 禁止直接双击表格编辑，只读
     ui->flightTable->setSelectionBehavior(QAbstractItemView::SelectRows);  // 点击时选中一整行
@@ -137,15 +137,23 @@ void AdminDashboard::on_btnEditFlight_clicked()
     // 0:ID, 1:航班号, 2:出发, 3:目的, 4:时间, 5:价格, 6:座位
     int id = ui->flightTable->item(currentRow, 0)->text().toInt();
     QString no = ui->flightTable->item(currentRow, 1)->text();
-    QString origin = ui->flightTable->item(currentRow, 2)->text();
-    QString dest = ui->flightTable->item(currentRow, 3)->text();
-    QDateTime time = QDateTime::fromString(ui->flightTable->item(currentRow, 4)->text(), "yyyy-MM-dd HH:mm:ss");
-    double price = ui->flightTable->item(currentRow, 5)->text().toDouble();
-    int seats = ui->flightTable->item(currentRow, 6)->text().toInt();
+    QString model = ui->flightTable->item(currentRow, 2)->text();
+    QString origin = ui->flightTable->item(currentRow, 3)->text();
+    QString dest = ui->flightTable->item(currentRow, 4)->text();
+    QDateTime deptTime = QDateTime::fromString(ui->flightTable->item(currentRow, 5)->text(), "yyyy-MM-dd HH:mm:ss");
+    QDateTime arrTime = QDateTime::fromString(ui->flightTable->item(currentRow, 6)->text(), "yyyy-MM-dd HH:mm:ss");
+    double price = ui->flightTable->item(currentRow, 7)->text().toDouble();
+    QString seatsStr = ui->flightTable->item(currentRow, 8)->text();
+    // 解析最后一列 "总座/余票"，假设显示格式为 "100 / 50"
+    QStringList parts = seatsStr.split("/");
+    int totalSeats = 0;
+    int remainingSeats = 0;
+    if(parts.size() >= 1) totalSeats = parts[0].trimmed().toInt();
+    if(parts.size() >= 2) remainingSeats = parts[1].trimmed().toInt();
 
     // 创建弹窗并填入旧数据
     FlightDialog dlg(this);
-    dlg.setFlightData(id, no, origin, dest, time, price, seats);
+    dlg.setFlightData(id, no, model, origin, dest, deptTime, arrTime, price, totalSeats, remainingSeats);
 
     // 显示弹窗
     if (dlg.exec() == QDialog::Accepted)
@@ -175,11 +183,16 @@ void AdminDashboard::updateFlightTable(const QJsonArray &flights)
         // 填入数据
         ui->flightTable->setItem(row, 0, new QTableWidgetItem(QString::number(obj["flight_id"].toInt())));
         ui->flightTable->setItem(row, 1, new QTableWidgetItem(obj["flight_number"].toString()));
-        ui->flightTable->setItem(row, 2, new QTableWidgetItem(obj["origin"].toString()));
-        ui->flightTable->setItem(row, 3, new QTableWidgetItem(obj["destination"].toString()));
-        ui->flightTable->setItem(row, 4, new QTableWidgetItem(obj["departure_time"].toString()));
-        ui->flightTable->setItem(row, 5, new QTableWidgetItem(QString::number(obj["price"].toDouble())));
-        ui->flightTable->setItem(row, 6, new QTableWidgetItem(QString::number(obj["remaining_seats"].toInt())));
+        ui->flightTable->setItem(row, 2, new QTableWidgetItem(obj["model"].toString()));
+        ui->flightTable->setItem(row, 3, new QTableWidgetItem(obj["origin"].toString()));
+        ui->flightTable->setItem(row, 4, new QTableWidgetItem(obj["destination"].toString()));
+        ui->flightTable->setItem(row, 5, new QTableWidgetItem(obj["departure_time"].toString()));
+        ui->flightTable->setItem(row, 6, new QTableWidgetItem(obj["arrival_time"].toString()));
+        ui->flightTable->setItem(row, 7, new QTableWidgetItem(QString::number(obj["price"].toDouble())));
+        // 合并显示总座和余票
+        int total = obj["total_seats"].toInt();
+        int remain = obj["remaining_seats"].toInt();
+        ui->flightTable->setItem(row, 8, new QTableWidgetItem(QString("%1 / %2").arg(total).arg(remain)));
     }
 }
 
