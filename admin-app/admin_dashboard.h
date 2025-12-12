@@ -38,5 +38,8 @@ private:
 
     // 辅助函数：初始化表格表头
     void setupTables();
+
+    // 样式美化函数
+    void applyStyles();
 };
 #endif // ADMIN_DASHBOARD_H

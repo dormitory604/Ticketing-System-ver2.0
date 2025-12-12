@@ -16,6 +16,9 @@ AdminDashboard::AdminDashboard(QWidget *parent)
     // 初始化表格样式（设置列头）
     setupTables();
 
+    // 应用样式美化
+    applyStyles();
+
     // 连接NetworkManager的信号
     NetworkManager *nm = &NetworkManager::instance();
 
@@ -247,4 +250,163 @@ void AdminDashboard::handleOperationSuccess(const QString &msg)
 void AdminDashboard::handleOperationFailed(const QString &msg)
 {
     QMessageBox::warning(this, "失败", msg);
+}
+
+//样式美化函数
+void AdminDashboard::applyStyles()
+{
+    // 1. 全局字体与背景
+    // 设置一个看起来比较舒服的无衬线字体
+    this->setStyleSheet(R"(
+        QMainWindow
+        {
+            background-color: #f0f2f5;
+        }
+        QWidget
+        {
+            font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+            font-size: 10pt;
+        }
+    )");
+
+    // 2. 表格样式
+    // 这种写法对应所有 QTableWidget
+    QString tableStyle = R"(
+        QTableWidget
+        {
+            background-color: #ffffff;
+            border: 1px solid #dcdcdc;
+            gridline-color: #e0e0e0;
+            selection-background-color: #e6f7ff; /* 选中项浅蓝背景 */
+            selection-color: #000000;            /* 选中项黑色文字 */
+            outline: none;                       /* 去掉选中虚线框 */
+        }
+        QTableWidget::item
+        {
+            padding: 5px; /* 让行高一点，不拥挤 */
+        }
+        QHeaderView::section
+        {
+            background-color: #fafafa;
+            padding: 5px;
+            border: none;
+            border-bottom: 1px solid #dcdcdc;
+            border-right: 1px solid #dcdcdc;
+            font-weight: bold;
+            color: #333333;
+        }
+    )";
+    ui->flightTable->setStyleSheet(tableStyle);
+    ui->userTable->setStyleSheet(tableStyle);
+    ui->bookingTable->setStyleSheet(tableStyle);
+
+    // 开启隔行变色
+    ui->flightTable->setAlternatingRowColors(true);
+    ui->userTable->setAlternatingRowColors(true);
+    ui->bookingTable->setAlternatingRowColors(true);
+
+    // 隐藏垂直表头 (行号)，通常Admin后台不需要显示 1,2,3...
+    ui->flightTable->verticalHeader()->setVisible(false);
+    ui->userTable->verticalHeader()->setVisible(false);
+    ui->bookingTable->verticalHeader()->setVisible(false);
+
+
+    // 3. 按钮通用样式
+    QString btnStyle = R"(
+        QPushButton
+        {
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            background-color: #ffffff;
+            padding: 5px 15px;
+            color: #333333;
+        }
+        QPushButton:hover
+        {
+            border-color: #40a9ff;
+            color: #40a9ff;
+        }
+        QPushButton:pressed
+        {
+            background-color: #f0f0f0;
+        }
+    )";
+
+    // 应用通用样式
+    ui->btnRefresh->setStyleSheet(btnStyle);
+    ui->btnEditFlight->setStyleSheet(btnStyle);
+
+    // 4. 特殊按钮样式
+
+    // [添加航班] - 蓝色主色调，显眼
+    ui->btnAddFlight->setStyleSheet(R"(
+        QPushButton
+        {
+            background-color: #1890ff;
+            border: 1px solid #1890ff;
+            border-radius: 4px;
+            color: white;
+            padding: 5px 15px;
+            font-weight: bold;
+        }
+        QPushButton:hover
+        {
+            background-color: #40a9ff;
+        }
+        QPushButton:pressed
+        {
+            background-color: #096dd9;
+        }
+    )");
+
+    // [删除航班] - 红色警告色，防止误触
+    ui->btnDeleteFlight->setStyleSheet(R"(
+        QPushButton
+        {
+            background-color: #fff1f0;
+            border: 1px solid #ffa39e;
+            border-radius: 4px;
+            color: #ff4d4f;
+            padding: 5px 15px;
+        }
+        QPushButton:hover
+        {
+            background-color: #ff4d4f;
+            color: white;
+            border-color: #ff4d4f;
+        }
+        QPushButton:pressed {
+            background-color: #cf1322;
+        }
+    )");
+
+    // 5. TabWidget 样式 (选项卡)
+    ui->tabWidget->setStyleSheet(R"(
+        QTabWidget::pane
+        {
+            border: 1px solid #dcdcdc;
+            background: white;
+            top: -1px;
+        }
+        QTabBar::tab
+        {
+            background: #fafafa;
+            border: 1px solid #dcdcdc;
+            padding: 8px 20px;
+            margin-right: 2px;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+        }
+        QTabBar::tab:selected
+        {
+            background: white;
+            border-bottom-color: white; /* 看起来和下面连在一起 */
+            font-weight: bold;
+            color: #1890ff;
+        }
+        QTabBar::tab:hover
+        {
+            background: #fff;
+        }
+    )");
 }

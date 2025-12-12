@@ -10,6 +10,13 @@
 class NetworkManager : public QObject
 {
     Q_OBJECT
+    // 定义一个枚举，列出所有可能请求列表的操作
+    enum RequestType {
+        None,
+        FlightList,
+        UserList,
+        BookingList
+    };
 public:
     // 保证程序里面只有一个networkmanager实例
     static NetworkManager& instance()
@@ -72,6 +79,8 @@ private:
     QTcpSocket* m_socket;
     const QString SERVER_IP = "127.0.0.1";
     const quint16 SERVER_PORT = 12345; // 对应 Server main.cpp 里的端口
+
+    RequestType m_lastRequestType = None;  // 记录上一次的操作，初始化为None
 
     // 辅助发送函数
     void send(const QJsonObject& json);

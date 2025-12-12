@@ -111,6 +111,7 @@ void NetworkManager::sendAdminLoginRequest(const QString& username, const QStrin
 // 获取航班
 void NetworkManager::sendGetAllFlightsRequest()
 {
+    m_lastRequestType = FlightList;  //记录：上一步的操作是获取航班
     QJsonObject request;
     request["action"] = "admin_get_all_flights";
     request["data"] = QJsonObject(); // 这个接口不需要 data 参数
@@ -158,6 +159,7 @@ void NetworkManager::sendAdminUpdateFlightRequest(int flightId, const QJsonObjec
 // 获取所有用户(对应handleAdminGetAllUsers)
 void NetworkManager::sendAdminGetAllUsersRequest()
 {
+    m_lastRequestType = UserList; //记录：上一步的操作是获取所有用户
     QJsonObject request;
     request["action"] = "admin_get_all_users";  // 对应server-app中的管理员接口handleAdminGetAllUsers，表示这是获取所有用户
     request["data"] = QJsonObject(); // 空数据
@@ -168,6 +170,7 @@ void NetworkManager::sendAdminGetAllUsersRequest()
 // 获取所有订单(对应handleAdminGetAllBookings)
 void NetworkManager::sendAdminGetAllBookingsRequest()
 {
+    m_lastRequestType = BookingList;  // 记录：上一步的操作是获取所有订单
     QJsonObject request;
     request["action"] = "admin_get_all_bookings";  // 对应server-app中的管理员接口handleAdminGetAllBookings，表示这是获取所有订单
     request["data"] = QJsonObject();
@@ -233,29 +236,46 @@ void NetworkManager::onReadyRead()
     {
         QJsonArray arr = rawData.toArray();
 
-        // 如果数组为空，很难判断类型，不做处理
+        // 如果数组为空，根据上一步的操作做出回应
         if (arr.isEmpty())
         {
-            return;
+            if (m_lastRequestType == FlightList) // 上一步是获取航班
+            {
+                emit allFlightsReceived(arr); // 发送空数组，界面会被清空
+            }
+            else if (m_lastRequestType == UserList) // 上一步是获取用户信息
+            {
+                emit allUsersReceived(arr);
+            }
+            else if (m_lastRequestType == BookingList) // 上一步是获取订单信息
+            {
+                emit allBookingsReceived(arr);
+            }
         }
-        // 拿出数组中的第一列，查看是什么列表
-        QJsonObject firstItem = arr.first().toObject();
+        else
+        {
+            // 拿出数组中的第一列，查看是什么列表
+            QJsonObject firstItem = arr.first().toObject();
 
-        // 航班列表特征: 有 "flight_number"
-        if (firstItem.contains("flight_number"))
-        {
-            emit allFlightsReceived(arr);
+            // 航班列表特征: 有 "flight_number"
+            if (firstItem.contains("flight_number"))
+            {
+                emit allFlightsReceived(arr);
+            }
+            // 用户列表特征: 有 "username" 但没有 "flight_number"
+            else if (firstItem.contains("username"))
+            {
+                emit allUsersReceived(arr);
+            }
+            // 订单列表特征: 有 "booking_id"
+            else if (firstItem.contains("booking_id"))
+            {
+                emit allBookingsReceived(arr);
+            }
         }
-        // 用户列表特征: 有 "username" 但没有 "flight_number"
-        else if (firstItem.contains("username"))
-        {
-            emit allUsersReceived(arr);
-        }
-        // 订单列表特征: 有 "booking_id"
-        else if (firstItem.contains("booking_id"))
-        {
-            emit allBookingsReceived(arr);
-        }
+
+        // 重置状态
+        m_lastRequestType = None;
         return;
     }
 
