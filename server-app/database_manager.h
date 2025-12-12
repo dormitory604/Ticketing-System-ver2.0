@@ -89,7 +89,8 @@ private:
                         "arrival_time DATETIME NOT NULL,"
                         "total_seats INTEGER NOT NULL,"
                         "remaining_seats INTEGER NOT NULL,"
-                        "price REAL NOT NULL"
+                        "price REAL NOT NULL,"
+                        "is_deleted INTEGER NOT NULL DEFAULT 0"
                         ");")) {
             qCritical() << "创建Flight表失败:" << query.lastError().text();
             return false;
