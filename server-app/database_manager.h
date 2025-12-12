@@ -7,6 +7,7 @@
 #ifndef DATABASE_MANAGER_H
 #define DATABASE_MANAGER_H
 
+#include <QCoreApplication>
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlError>
@@ -26,12 +27,14 @@ public:
     bool init() {
         m_db = QSqlDatabase::addDatabase("QSQLITE");
 
-        // 这里是获取用户的“文档”路径，确保这个文件夹对于应用来说有访问权限。（否则没有访问权限可能会出事
         QString dbPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+
         QDir().mkpath(dbPath);
         m_db.setDatabaseName(dbPath + "/flight_system.db");
 
-        if (!m_db.open()) {
+
+        if (!m_db.open())
+        {
             qCritical() << "数据库打开失败:" << m_db.lastError().text();
             return false;
         }
@@ -40,7 +43,8 @@ public:
 
         // 启用外键约束（SQLlite默认是没有开启外键约束的
         QSqlQuery query(m_db);
-        if (!query.exec("PRAGMA foreign_keys = ON;")) {
+        if (!query.exec("PRAGMA foreign_keys = ON;"))
+        {
             qWarning() << "启用外键失败:" << query.lastError().text();
         }
 
@@ -85,7 +89,8 @@ private:
                         "arrival_time DATETIME NOT NULL,"
                         "total_seats INTEGER NOT NULL,"
                         "remaining_seats INTEGER NOT NULL,"
-                        "price REAL NOT NULL"
+                        "price REAL NOT NULL,"
+                        "is_deleted INTEGER NOT NULL DEFAULT 0"
                         ");")) {
             qCritical() << "创建Flight表失败:" << query.lastError().text();
             return false;
@@ -111,7 +116,7 @@ private:
         // 这里的SQL写法也确保了这个管理员帐户不会被反复插入。
         query.exec("INSERT INTO User (username, password, is_admin) "
                    "SELECT 'jaisonZheng', 'admin123', 1 "
-                   "WHERE NOT EXISTS (SELECT 1 FROM User WHERE username = 'admin');");
+                   "WHERE NOT EXISTS (SELECT 1 FROM User WHERE username = 'jaisonZheng');");
 
         return true;
     }

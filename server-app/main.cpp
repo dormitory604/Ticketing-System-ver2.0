@@ -1,8 +1,7 @@
 /*
 该程序负责开启服务器端服务
 */
-#include <QCoreApplication>
-#include <QDebug>
+
 #include "database_manager.h"
 #include "tcp_server.h"
 
