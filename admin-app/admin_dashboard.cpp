@@ -13,11 +13,25 @@ AdminDashboard::AdminDashboard(QWidget *parent)
 {
     ui->setupUi(this);
 
+    // 连接订单管理页面的按钮
+    connect(ui->btnSearchBooking, &QPushButton::clicked, this, &AdminDashboard::on_btnSearchBooking_clicked);
+    connect(ui->btnCancelBooking, &QPushButton::clicked, this, &AdminDashboard::on_btnCancelBooking_clicked);
+    connect(ui->btnRefreshBooking, &QPushButton::clicked, this, &AdminDashboard::on_btnRefreshBooking_clicked);
+
     // 初始化表格样式（设置列头）
     setupTables();
 
     // 应用样式美化
     applyStyles();
+
+    // 初始化搜索部分的UI状态
+    // 日期选择框默认设为今天
+    ui->dtpSearchDate->setDate(QDate::currentDate());
+    // 连接“按日期”勾选框：只有勾选了，日期输入框才可用，否则变灰禁用
+    connect(ui->chkEnableDate, &QCheckBox::toggled, ui->dtpSearchDate, &QWidget::setEnabled);
+
+    // 连接搜索按钮点击事件 -> 触发筛选
+    connect(ui->btnSearch, &QPushButton::clicked, this, &AdminDashboard::on_btnSearch_clicked);
 
     // 连接NetworkManager的信号
     NetworkManager *nm = &NetworkManager::instance();
@@ -75,6 +89,11 @@ void AdminDashboard::setupTables()
 // 点击“刷新”按钮
 void AdminDashboard::on_btnRefresh_clicked()
 {
+    // 清空搜索条件，让用户看到所有数据
+    ui->txtSearchOrigin->clear();
+    ui->txtSearchDest->clear();
+    ui->chkEnableDate->setChecked(false); // 取消勾选日期
+
     // 马上查航班
     NetworkManager::instance().sendGetAllFlightsRequest();
 
@@ -89,6 +108,26 @@ void AdminDashboard::on_btnRefresh_clicked()
     {
         NetworkManager::instance().sendAdminGetAllBookingsRequest();
     });
+}
+
+// 点击“查询”按钮
+void AdminDashboard::on_btnSearch_clicked()
+{
+    QString searchOrigin = ui->txtSearchOrigin->text().trimmed();
+    QString searchDest = ui->txtSearchDest->text().trimmed();
+    QString searchDate = "";
+
+    // 只有勾选了日期，才发送日期参数
+    if (ui->chkEnableDate->isChecked())
+    {
+        searchDate = ui->dtpSearchDate->date().toString("yyyy-MM-dd");
+    }
+
+    // 提示用户正在搜索
+    ui->statusbar->showMessage("正在向服务器发起检索...", 2000);
+
+    // 发送请求给服务器，让数据库去筛选
+    NetworkManager::instance().sendAdminSearchFlightsRequest(searchOrigin, searchDest, searchDate);
 }
 
 // 点击“删除”按钮
@@ -195,17 +234,17 @@ void AdminDashboard::on_btnEditFlight_clicked()
 // 航班数据更新槽函数（接收服务器数据并填表）
 void AdminDashboard::updateFlightTable(const QJsonArray &flights)
 {
-    ui->flightTable->setRowCount(0);  // 清空旧数据
+    // 不再缓存，直接清空表格
+    ui->flightTable->setRowCount(0);
 
-    // 遍历JSON数组
+    // 遍历服务器返回的数组
     for (const QJsonValue &val : flights)
     {
+        QJsonObject obj = val.toObject();
 
-        QJsonObject obj = val.toObject();  //拿到单条航班信息
-        int row = ui->flightTable->rowCount();  // 获取行数
-        ui->flightTable->insertRow(row);  // 末尾新建一行
+        int row = ui->flightTable->rowCount();
+        ui->flightTable->insertRow(row);
 
-        // 填入数据
         ui->flightTable->setItem(row, 0, new QTableWidgetItem(QString::number(obj["flight_id"].toInt())));
         ui->flightTable->setItem(row, 1, new QTableWidgetItem(obj["flight_number"].toString()));
         ui->flightTable->setItem(row, 2, new QTableWidgetItem(obj["model"].toString()));
@@ -214,36 +253,33 @@ void AdminDashboard::updateFlightTable(const QJsonArray &flights)
         ui->flightTable->setItem(row, 5, new QTableWidgetItem(obj["departure_time"].toString()));
         ui->flightTable->setItem(row, 6, new QTableWidgetItem(obj["arrival_time"].toString()));
         ui->flightTable->setItem(row, 7, new QTableWidgetItem(QString::number(obj["price"].toDouble())));
-        // 合并显示总座和余票
+
         int total = obj["total_seats"].toInt();
         int remain = obj["remaining_seats"].toInt();
         ui->flightTable->setItem(row, 8, new QTableWidgetItem(QString("%1 / %2").arg(total).arg(remain)));
 
-        // 处理 is_deleted 状态
         int isDeleted = obj["is_deleted"].toInt();
         QTableWidgetItem *statusItem;
-
         if (isDeleted == 1)
         {
             statusItem = new QTableWidgetItem("已删除");
             // 将这一行的所有单元格文字设为灰色
-            for (int col = 0; col <= 8; ++col)
-            {
+            for (int col = 0; col <= 8; ++col) {
                 if (ui->flightTable->item(row, col))
-                {
                     ui->flightTable->item(row, col)->setForeground(Qt::gray);
-                }
             }
-            statusItem->setForeground(Qt::gray); // 状态列也设为灰色
+            statusItem->setForeground(Qt::gray);
         }
         else
         {
             statusItem = new QTableWidgetItem("正常");
-            statusItem->setForeground(QColor("#52c41a")); // 正常显示为绿色
+            statusItem->setForeground(QColor("#52c41a"));
         }
-
-        ui->flightTable->setItem(row, 9, statusItem); // 填入第10列
+        ui->flightTable->setItem(row, 9, statusItem);
     }
+
+    // 状态栏提示结果
+    ui->statusbar->showMessage(QString("加载完成，显示前 %1 条结果").arg(flights.size()), 5000);
 }
 
 // 用户数据更新槽函数（接收服务器数据并填表）
@@ -345,6 +381,74 @@ void AdminDashboard::handleOperationSuccess(const QString &msg)
 void AdminDashboard::handleOperationFailed(const QString &msg)
 {
     QMessageBox::warning(this, "失败", msg);
+}
+
+// 点击刷新订单按钮
+void AdminDashboard::on_btnRefreshBooking_clicked()
+{
+    // 清空搜索框
+    ui->txtSearchBookingID->clear();
+    ui->txtSearchUsername->clear();
+
+    // 发送获取所有订单请求
+    NetworkManager::instance().sendAdminGetAllBookingsRequest();
+
+    ui->statusbar->showMessage("正在刷新订单列表...", 2000);
+}
+
+// 点击查询订单按钮
+void AdminDashboard::on_btnSearchBooking_clicked()
+{
+    QString bookingId = ui->txtSearchBookingID->text().trimmed();
+    QString username = ui->txtSearchUsername->text().trimmed();
+
+    // 如果两个都为空，提示一下或者直接刷新
+    if (bookingId.isEmpty() && username.isEmpty()) {
+        on_btnRefreshBooking_clicked();
+        return;
+    }
+
+    ui->statusbar->showMessage("正在搜索订单...", 2000);
+    // 发送搜索请求
+    NetworkManager::instance().sendAdminSearchBookingsRequest(bookingId, username);
+}
+
+// 点击取消订单按钮
+void AdminDashboard::on_btnCancelBooking_clicked()
+{
+    // 1. 获取当前选中的行
+    int currentRow = ui->bookingTable->currentRow();
+    if (currentRow < 0) {
+        QMessageBox::warning(this, "提示", "请先选择要操作的订单！");
+        return;
+    }
+
+    // 2. 检查订单状态，如果已经取消了就别让点了
+    // 假设第4列(索引3)是状态列："已确认" / "已取消" / "航班已失效"
+    QString currentStatus = ui->bookingTable->item(currentRow, 3)->text();
+
+    if (currentStatus == "已取消") {
+        QMessageBox::warning(this, "无效操作", "该订单已经是【已取消】状态。");
+        return;
+    }
+    if (currentStatus == "航班已失效") {
+        QMessageBox::warning(this, "无效操作", "该航班已被删除，订单已失效。");
+        return;
+    }
+
+    // 3. 获取订单ID (假设第1列是订单ID)
+    int bookingId = ui->bookingTable->item(currentRow, 0)->text().toInt();
+
+    // 4. 二次确认弹窗
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(this, "确认退票",
+                                  QString("确定要强制取消订单 #%1 吗？\n这将释放该航班的一个座位。").arg(bookingId),
+                                  QMessageBox::Yes | QMessageBox::No);
+
+    if (reply == QMessageBox::Yes) {
+        // 发送取消请求
+        NetworkManager::instance().sendAdminCancelBookingRequest(bookingId);
+    }
 }
 
 //样式美化函数
@@ -475,6 +579,41 @@ void AdminDashboard::applyStyles()
         }
     )");
 
+    // 搜索区域的样式美化
+    // 搜索框区域 GroupBox 样式
+    QString searchGroupStyle = R"(
+        QGroupBox {
+            border: 1px solid #dcdcdc;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        QGroupBox::title {
+            subcontrol-origin: margin;
+            subcontrol-position: top left;
+            padding: 0 5px;
+            color: #666;
+        }
+    )";
+    ui->groupBox->setStyleSheet(searchGroupStyle);
+
+    // 查询按钮样式 (使用绿色，区别于添加按钮的蓝色)
+    ui->btnSearch->setStyleSheet(R"(
+        QPushButton {
+            background-color: #52c41a;
+            border: 1px solid #52c41a;
+            border-radius: 4px;
+            color: white;
+            padding: 5px 20px;
+        }
+        QPushButton:hover {
+            background-color: #73d13d;
+        }
+        QPushButton:pressed {
+            background-color: #389e0d;
+        }
+    )");
+
     // 5. TabWidget 样式 (选项卡)
     ui->tabWidget->setStyleSheet(R"(
         QTabWidget::pane
@@ -503,5 +642,34 @@ void AdminDashboard::applyStyles()
         {
             background: #fff;
         }
+    )");
+
+    // 6. 订单查询按钮 - 绿色 (复用 btnSearch 的样式)
+    QString greenBtnStyle = R"(
+        QPushButton {
+            background-color: #52c41a; border: 1px solid #52c41a; border-radius: 4px; color: white; padding: 5px 15px;
+        }
+        QPushButton:hover { background-color: #73d13d; }
+        QPushButton:pressed { background-color: #389e0d; }
+    )";
+    ui->btnSearchBooking->setStyleSheet(greenBtnStyle);
+
+    // 7. 订单刷新按钮 - 白色 (复用通用样式)
+    QString whiteBtnStyle = R"(
+        QPushButton {
+            border: 1px solid #d9d9d9; border-radius: 4px; background-color: #ffffff; padding: 5px 15px; color: #333333;
+        }
+        QPushButton:hover { border-color: #40a9ff; color: #40a9ff; }
+        QPushButton:pressed { background-color: #f0f0f0; }
+    )";
+    ui->btnRefreshBooking->setStyleSheet(whiteBtnStyle);
+
+    // 8. 取消订单按钮 - 红色警告样式
+    ui->btnCancelBooking->setStyleSheet(R"(
+        QPushButton {
+            background-color: #fff1f0; border: 1px solid #ffa39e; border-radius: 4px; color: #ff4d4f; padding: 5px 15px;
+        }
+        QPushButton:hover { background-color: #ff4d4f; color: white; border-color: #ff4d4f; }
+        QPushButton:pressed { background-color: #cf1322; }
     )");
 }
