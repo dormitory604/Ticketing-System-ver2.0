@@ -23,6 +23,7 @@ private slots:
     void on_btnDeleteFlight_clicked();  // 点击删除
     void on_btnEditFlight_clicked();  // 点击修改
     void on_btnRefresh_clicked();  // 点击刷新
+    void on_btnSearch_clicked();  // 点击搜索
 
     // NetworkManager信号接收槽
     void updateFlightTable(const QJsonArray &flights);  // 填航班表
@@ -32,6 +33,11 @@ private slots:
     // 处理操作成功/失败的弹窗
     void handleOperationSuccess(const QString &msg);
     void handleOperationFailed(const QString &msg);
+
+    // 订单管理页面的按钮槽函数
+    void on_btnSearchBooking_clicked();   // 点击查询订单
+    void on_btnCancelBooking_clicked();   // 点击取消订单
+    void on_btnRefreshBooking_clicked();  // 点击刷新订单
 
 private:
     Ui::AdminDashboard *ui;

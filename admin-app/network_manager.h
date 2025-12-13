@@ -36,6 +36,9 @@ public:
     // 航班查询(对应server-app中的handleSearchFlights)
     void sendGetAllFlightsRequest();
 
+    // 发送搜索航班请求 (服务器端筛选)
+    void sendAdminSearchFlightsRequest(const QString& origin, const QString& dest, const QString& date);
+
     // 项目接口文档3.3中的5个管理员接口
     // 添加航班(对应server-app与管理员接口handleAdminAddFlight)
     void sendAdminAddFlightRequest(const QJsonObject& flightData);
@@ -51,6 +54,12 @@ public:
 
     // 获取所有订单(对应server-app与管理员接口handleAdminGetAllBookings)
     void sendAdminGetAllBookingsRequest();
+
+    // 搜索订单请求 (根据订单号或用户名)
+    void sendAdminSearchBookingsRequest(const QString& bookingId, const QString& username);
+
+    // 管理员强制取消订单请求
+    void sendAdminCancelBookingRequest(int bookingId);
 
 
 signals:
@@ -77,10 +86,19 @@ private:
     ~NetworkManager();
 
     QTcpSocket* m_socket;
-    const QString SERVER_IP = "43.136.42.69"; // 云服务器
+
+    const QString SERVER_IP = "43.136.42.69"; // 云服务器，如果是本地要改成127.0.0.1
+
     const quint16 SERVER_PORT = 12345; // 对应 Server main.cpp 里的端口
 
-    RequestType m_lastRequestType = None;  // 记录上一次的操作，初始化为None
+    // 网络缓冲区，用于解决粘包/拆包
+    QByteArray m_buffer;
+
+    // 用队列来记录发出了什么请求
+    QList<RequestType> m_requestQueue;
+
+    // 提取出来的消息处理函数
+    void processMessage(const QJsonObject& root);
 
     // 辅助发送函数
     void send(const QJsonObject& json);
