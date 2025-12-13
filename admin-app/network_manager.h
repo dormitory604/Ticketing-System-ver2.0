@@ -26,7 +26,7 @@ public:
     }
 
     // 连接控制
-    void connectToServer();  // 连接服务器端口：127.0.0.1:12345
+    void connectToServer();  // 默认连云端 43.136.42.69:12345，本地调试可改回 127.0.0.1
     bool isConnected() const;  // 查看是否与服务器连接
 
     // 发送接口(C2S)
@@ -77,7 +77,7 @@ private:
     ~NetworkManager();
 
     QTcpSocket* m_socket;
-    const QString SERVER_IP = "127.0.0.1";
+    const QString SERVER_IP = "43.136.42.69"; // 云服务器
     const quint16 SERVER_PORT = 12345; // 对应 Server main.cpp 里的端口
 
     RequestType m_lastRequestType = None;  // 记录上一次的操作，初始化为None
