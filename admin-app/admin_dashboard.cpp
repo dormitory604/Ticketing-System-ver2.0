@@ -48,9 +48,14 @@ void AdminDashboard::setupTables()
     // 设置航班表头
     ui->flightTable->setColumnCount(10);
     ui->flightTable->setHorizontalHeaderLabels({"ID", "航班号", "机型", "出发地", "目的地", "起飞时间", "到达时间", "价格", "总座/余票", "状态"});
-    ui->flightTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch); // 自适应宽度填满窗口
-    ui->flightTable->setEditTriggers(QAbstractItemView::NoEditTriggers);  // 禁止直接双击表格编辑，只读
-    ui->flightTable->setSelectionBehavior(QAbstractItemView::SelectRows);  // 点击时选中一整行
+
+    // 所有列根据内容自动调整宽度
+    ui->flightTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    // 让最后一列自动拉伸，填满窗口右边的空白
+    ui->flightTable->horizontalHeader()->setStretchLastSection(true);
+
+    ui->flightTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->flightTable->setSelectionBehavior(QAbstractItemView::SelectRows);
 
     // 设置用户表头
     ui->userTable->setColumnCount(4);
