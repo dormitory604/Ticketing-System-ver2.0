@@ -257,6 +257,7 @@ void NetworkManager::onReadyRead()
             // 拿出数组中的第一列，查看是什么列表
             QJsonObject firstItem = arr.first().toObject();
 
+
             // 航班列表特征: 有 "flight_number"
             if (firstItem.contains("flight_number"))
             {
@@ -267,6 +268,7 @@ void NetworkManager::onReadyRead()
             {
                 emit allUsersReceived(arr);
             }
+
             // 订单列表特征: 有 "booking_id"
             else if (firstItem.contains("booking_id"))
             {
