@@ -44,73 +44,86 @@ void TcpServer::onReadyRead()
     QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
     if (!socket) return;
 
-    QByteArray receivedData = socket->readAll();
-    qDebug() << "收到原始数据:" << receivedData;
+    ClientInfo &info = clients[socket];
 
-    // JSON解析
-    QJsonDocument jsonDoc = QJsonDocument::fromJson(receivedData);
-    if (jsonDoc.isNull() || !jsonDoc.isObject()) {
-        qWarning() << "收到无效的JSON格式";
+    // 追加收到的数据到缓冲
+    info.recvBuf.append(socket->readAll());
 
-        // 返回错误消息
-        QJsonObject error;
-        error["status"] = "error";
-        error["message"] = "Invalid JSON format";
-        sendJsonResponse(socket, error);
-
-        return;
-    }
-
-    QJsonObject request = jsonDoc.object();
-    qDebug() << "解析JSON请求:" << request;
-
-    // 首次解析tag
-    if (clients[socket].tag.isEmpty())
-    {
-        if (!request.contains("tag") || !request["tag"].isString()) {
-
-            QJsonObject error;
-            error["status"] = "error";
-            error["message"] = "Missing or invalid tag";
-
-            sendJsonResponse(socket, error);
-            socket->disconnectFromHost();
-            return;
+    // 循环解析，可能一次解析多条消息
+    while (true) {
+        // 还没读到长度前缀
+        if (info.expectedLen == 0) {
+            if (info.recvBuf.size() < static_cast<int>(sizeof(quint32)))
+                break;
+            quint32 len = qFromBigEndian<quint32>(reinterpret_cast<const uchar*>(info.recvBuf.constData()));
+            info.expectedLen = len;
+            info.recvBuf.remove(0, sizeof(quint32));
         }
 
-        QString tag = request["tag"].toString();
+        // 数据不够一帧
+        if (info.recvBuf.size() < info.expectedLen)
+            break;
 
-        // 检查 tag 是否重复
-        for (auto it = clients.begin(); it != clients.end(); ++it) {
-            if (it.value().tag == tag && it.key() != socket) {
+        // 取出完整帧
+        QByteArray frame = info.recvBuf.left(info.expectedLen);
+        info.recvBuf.remove(0, info.expectedLen);
+        info.expectedLen = 0;
 
-                QJsonObject error;
-                error["status"] = "error";
-                error["message"] = "Tag already in use";
+        qDebug() << "收到原始数据:" << frame;
 
+        // JSON解析
+        QJsonDocument jsonDoc = QJsonDocument::fromJson(frame);
+        if (jsonDoc.isNull() || !jsonDoc.isObject()) {
+            qWarning() << "收到无效的JSON格式";
+            QJsonObject error{{"status", "error"}, {"message", "Invalid JSON format"}};
+            sendJsonResponse(socket, error);
+            continue; // 继续处理后续帧
+        }
+
+        QJsonObject request = jsonDoc.object();
+        qDebug() << "解析JSON请求:" << request;
+
+        // 首次解析tag
+        if (clients[socket].tag.isEmpty())
+        {
+            if (!request.contains("tag") || !request["tag"].isString()) {
+                QJsonObject error{{"status", "error"}, {"message", "Missing or invalid tag"}};
                 sendJsonResponse(socket, error);
                 socket->disconnectFromHost();
-                return;
+                continue;
             }
+
+            QString tag = request["tag"].toString();
+
+            // 检查 tag 是否重复
+            for (auto it = clients.begin(); it != clients.end(); ++it) {
+                if (it.value().tag == tag && it.key() != socket) {
+                    QJsonObject error{{"status", "error"}, {"message", "Tag already in use"}};
+                    sendJsonResponse(socket, error);
+                    socket->disconnectFromHost();
+                    goto next_frame;
+                }
+            }
+
+            // 绑定 tag
+            clients[socket].tag = tag;
+            socket->setProperty("tag_registered", true);
+            qInfo() << "客户端注册tag成功:" << tag;
+
+            // 回复注册成功
+            QJsonObject success{{"status", "success"}, {"message", "Tag registered"}};
+            sendJsonResponse(socket, success);
+            goto next_frame;
         }
 
-        // 绑定 tag
-        clients[socket].tag = tag;
-        socket->setProperty("tag_registered", true);
-        qInfo() << "客户端注册tag成功:" << tag;
-
-        // 回复注册成功
-        QJsonObject success;
-        success["status"] = "success";
-        success["message"] = "Tag registered";
-        sendJsonResponse(socket, success);
-
-        return;
+        // 解析正常业务
+        {
+            QJsonObject response = handleRequest(request);
+            sendJsonResponse(socket, response);
+        }
+    next_frame:
+        continue;
     }
-
-    // 解析正常业务
-    QJsonObject response = handleRequest(request);
-    sendJsonResponse(socket, response);
 }
 
 // 当客户端断开连接时
@@ -131,8 +144,15 @@ void TcpServer::onDisconnected()
 void TcpServer::sendJsonResponse(QTcpSocket* socket, const QJsonObject& response)
 {
     QJsonDocument doc(response);
-    QByteArray data = doc.toJson();
-    socket->write(data);
+    QByteArray payload = doc.toJson(QJsonDocument::Compact);
+
+    quint32 len = payload.size();
+    QByteArray block;
+    block.resize(sizeof(quint32));
+    qToBigEndian(len, reinterpret_cast<uchar*>(block.data()));
+    block.append(payload);
+
+    socket->write(block);
     qDebug() << "发送JSON响应:" << response;
 }
 
@@ -366,7 +386,7 @@ QJsonObject TcpServer::handleSearchFlights(const QJsonObject& data)
     // 构建 SQL
     QString sql = R"(
         SELECT flight_id, flight_number, model, origin, destination,
-               departure_time, arrival_time, price, remaining_seats
+               departure_time, arrival_time, price, remaining_seats, total_seats
         FROM Flight
     )";
 
@@ -384,8 +404,7 @@ QJsonObject TcpServer::handleSearchFlights(const QJsonObject& data)
         binds[":destination"] = destination;
     }
     if (!date.isEmpty()) {
-        // departure_time LIKE '2025-12-05%'
-        where << "departure_time LIKE :date";
+        where << "departure_time LIKE :date";  // departure_time LIKE '2025-12-05%'
         binds[":date"] = date + "%";
     }
 
@@ -393,7 +412,7 @@ QJsonObject TcpServer::handleSearchFlights(const QJsonObject& data)
         sql += " WHERE " + where.join(" AND ");
     }
 
-    sql += " ORDER BY departure_time ASC LIMIT :limit";
+    sql += " ORDER BY departure_time ASC LIMIT " + QString::number(MAX_RETURN_ROWS);
 
     QSqlQuery query(DatabaseManager::instance().database());
     if (!query.prepare(sql)) {
@@ -408,7 +427,6 @@ QJsonObject TcpServer::handleSearchFlights(const QJsonObject& data)
         query.bindValue(it.key(), it.value());
     }
 
-    query.bindValue(":limit", MAX_RETURN_ROWS);
 
     if (!query.exec()) {
         return {
@@ -430,6 +448,7 @@ QJsonObject TcpServer::handleSearchFlights(const QJsonObject& data)
         f["departure_time"]  = query.value("departure_time").toString();
         f["arrival_time"]    = query.value("arrival_time").toString();
         f["price"]           = query.value("price").toDouble();
+        f["total_seats"]     = query.value("total_seats").toInt();
         f["remaining_seats"] = query.value("remaining_seats").toInt();
 
         flights.append(f);

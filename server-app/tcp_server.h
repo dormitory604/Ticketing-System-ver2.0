@@ -12,6 +12,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QTimer>
+#include <QtEndian>
 #include "database_manager.h"
 
 constexpr int MAX_RETURN_ROWS = 1000;
@@ -38,6 +39,8 @@ private:
 
     struct ClientInfo {
         QString tag;
+        QByteArray recvBuf;   // 接收缓冲
+        quint32 expectedLen{0}; // 下一帧期望长度
     };
 
     QHash<QTcpSocket*, ClientInfo> clients;
