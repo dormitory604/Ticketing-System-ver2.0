@@ -393,7 +393,7 @@ QJsonObject TcpServer::handleSearchFlights(const QJsonObject& data)
         sql += " WHERE " + where.join(" AND ");
     }
 
-    sql += " ORDER BY departure_time ASC";
+    sql += " ORDER BY departure_time ASC LIMIT :limit";
 
     QSqlQuery query(DatabaseManager::instance().database());
     if (!query.prepare(sql)) {
@@ -407,6 +407,8 @@ QJsonObject TcpServer::handleSearchFlights(const QJsonObject& data)
     for (auto it = binds.begin(); it != binds.end(); ++it) {
         query.bindValue(it.key(), it.value());
     }
+
+    query.bindValue(":limit", MAX_RETURN_ROWS);
 
     if (!query.exec()) {
         return {
@@ -595,6 +597,7 @@ QJsonObject TcpServer::handleGetMyOrders(const QJsonObject& data)
         JOIN Flight f ON b.flight_id = f.flight_id
         WHERE b.user_id = :user_id
         ORDER BY b.booking_time DESC
+        LIMIT :limit
     )"))
     {
         return {
@@ -605,6 +608,7 @@ QJsonObject TcpServer::handleGetMyOrders(const QJsonObject& data)
     }
 
     query.bindValue(":user_id", userId);
+    query.bindValue(":limit", MAX_RETURN_ROWS);
 
     if (!query.exec()) {
         return {
@@ -1010,7 +1014,10 @@ QJsonObject TcpServer::handleAdminGetAllUsers()
             user_id, username, is_admin, created_at
         FROM User
         ORDER BY user_id ASC
+        LIMIT :limit
     )");
+
+    query.bindValue(":limit", MAX_RETURN_ROWS);
 
     if (!query.exec()) {
         return {
@@ -1066,7 +1073,10 @@ QJsonObject TcpServer::handleAdminGetAllBookings()
         JOIN User   ON Booking.user_id  = User.user_id
         JOIN Flight f ON Booking.flight_id = Flight.flight_id
         ORDER BY Booking.booking_time DESC
+        LIMIT :limit
     )");
+
+    query.bindValue(":limit", MAX_RETURN_ROWS);
 
     if (!query.exec()) {
         return {
@@ -1119,6 +1129,7 @@ QJsonObject TcpServer::handleAdminGetAllFlights()
                total_seats, remaining_seats, price, is_deleted
         FROM Flight
         ORDER BY departure_time ASC
+        LIMIT :limit
     )"))
     {
         return {
@@ -1128,6 +1139,7 @@ QJsonObject TcpServer::handleAdminGetAllFlights()
         };
     }
 
+    query.bindValue(":limit", MAX_RETURN_ROWS);
     QJsonArray arr;
 
     while (query.next()) {
