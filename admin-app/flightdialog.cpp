@@ -1,4 +1,4 @@
-#include "flightdialog.h"
+ #include "flightdialog.h"
 #include "ui_flightdialog.h"
 
 FlightDialog::FlightDialog(QWidget *parent) :
