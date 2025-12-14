@@ -9,7 +9,6 @@ Rectangle {
     
     property var bridge
     signal requestOrders()
-    signal requestFavorites()
     signal requestProfile()
     signal requestLogout()
     
@@ -116,20 +115,6 @@ Rectangle {
                 Button {
                     text: "我的订单"
                     onClicked: searchWindow.requestOrders()
-                    background: Rectangle {
-                        color: parent.pressed ? "#1976D2" : "transparent"
-                        radius: 4
-                    }
-                    contentItem: Text {
-                        text: parent.text
-                        font.pixelSize: 14
-                        color: "white"
-                    }
-                }
-                
-                Button {
-                    text: "我的收藏"
-                    onClicked: searchWindow.requestFavorites()
                     background: Rectangle {
                         color: parent.pressed ? "#1976D2" : "transparent"
                         radius: 4
@@ -270,32 +255,6 @@ Rectangle {
                     }
                     onClicked: {
                         bridge.searchFlights(originField.text, destField.text, dateField.text)
-                    }
-                }
-                
-                Button {
-                    Layout.preferredWidth: 100
-                    Layout.preferredHeight: 40
-                    text: "添加到收藏"
-                    enabled: flightListView.currentIndex >= 0
-                    background: Rectangle {
-                        color: parent.enabled ? (parent.pressed ? "#4CAF50" : "#66BB6A") : "#cccccc"
-                        radius: 4
-                    }
-                    contentItem: Text {
-                        text: parent.text
-                        font.pixelSize: 14
-                        color: "white"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                    onClicked: {
-                        if (flightListView.currentIndex >= 0 && bridge && bridge.searchResults) {
-                            var flight = bridge.searchResults[flightListView.currentIndex]
-                            if (flight && flight.flight_id) {
-                                bridge.addFavorite(flight.flight_id)
-                            }
-                        }
                     }
                 }
                 
@@ -497,18 +456,6 @@ Rectangle {
             messageTimer.restart()
         }
         function onBookingFailed(message) {
-            messageBox.messageType = "error"
-            messageBox.messageText = message
-            messageBox.visible = true
-            messageTimer.restart()
-        }
-        function onAddFavoriteSuccess(message) {
-            messageBox.messageType = "success"
-            messageBox.messageText = message
-            messageBox.visible = true
-            messageTimer.restart()
-        }
-        function onAddFavoriteFailed(message) {
             messageBox.messageType = "error"
             messageBox.messageText = message
             messageBox.visible = true

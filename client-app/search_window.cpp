@@ -6,7 +6,6 @@
 #include "myorders_window.h"
 #include "profile_window.h"
 #include "booking_dialog.h"
-#include "favorites_window.h"
 
 #include <QMessageBox>
 #include <QDate>
@@ -17,11 +16,7 @@
 #include <QJsonObject>
 
 SearchWindow::SearchWindow(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::SearchWindow)
-    , m_ordersWindow(nullptr)
-    , m_profileWindow(nullptr)
-    , m_favoritesWindow(nullptr)
+    : QMainWindow(parent), ui(new Ui::SearchWindow), m_ordersWindow(nullptr), m_profileWindow(nullptr)
 {
     ui->setupUi(this);
     ui->dateEdit->setDate(QDate::currentDate());
@@ -39,24 +34,19 @@ SearchWindow::SearchWindow(QWidget *parent)
             this, &SearchWindow::handleBookingSuccess);
     connect(&NetworkManager::instance(), &NetworkManager::bookingFailed,
             this, &SearchWindow::handleBookingFailed);
-    connect(&NetworkManager::instance(), &NetworkManager::addFavoriteSuccess,
-            this, &SearchWindow::handleAddFavoriteSuccess);
-    connect(&NetworkManager::instance(), &NetworkManager::addFavoriteFailed,
-            this, &SearchWindow::handleAddFavoriteFailed);
     connect(&NetworkManager::instance(), &NetworkManager::generalError,
             this, &SearchWindow::handleGeneralError);
 }
 
 SearchWindow::~SearchWindow()
 {
-    if (m_ordersWindow) {
+    if (m_ordersWindow)
+    {
         m_ordersWindow->deleteLater();
     }
-    if (m_profileWindow) {
+    if (m_profileWindow)
+    {
         m_profileWindow->deleteLater();
-    }
-    if (m_favoritesWindow) {
-        m_favoritesWindow->deleteLater();
     }
     delete ui;
 }
@@ -82,19 +72,22 @@ void SearchWindow::on_searchButton_clicked()
 void SearchWindow::on_bookButton_clicked()
 {
     const int flightId = currentSelectedFlightId();
-    if (flightId <= 0) {
+    if (flightId <= 0)
+    {
         QMessageBox::warning(this, tr("提示"), tr("请先选择要预订的航班"));
         return;
     }
 
     const int userId = AppSession::instance().userId();
-    if (userId <= 0) {
+    if (userId <= 0)
+    {
         QMessageBox::warning(this, tr("提示"), tr("请先重新登录"));
         return;
     }
 
     const QJsonObject flight = currentSelectedFlight();
-    if (flight.isEmpty()) {
+    if (flight.isEmpty())
+    {
         QMessageBox::warning(this, tr("提示"), tr("未能读取航班信息，请刷新后重试"));
         return;
     }
@@ -109,20 +102,23 @@ void SearchWindow::on_bookButton_clicked()
                          this);
 
     connect(&dialog, &BookingDialog::bookingConfirmed, this,
-            [this](int userId, int flightId, const QString&, const QString&, const QString&) {
+            [this](int userId, int flightId, const QString &, const QString &, const QString &)
+            {
                 NetworkManager::instance().bookFlightRequest(userId, flightId);
                 ui->statusLabel->setText(tr("正在提交预订请求..."));
             });
 
     const int result = dialog.exec();
-    if (result == QDialog::Rejected) {
+    if (result == QDialog::Rejected)
+    {
         ui->statusLabel->setText(tr("订单填写已取消"));
     }
 }
 
 void SearchWindow::on_myOrdersButton_clicked()
 {
-    if (!m_ordersWindow) {
+    if (!m_ordersWindow)
+    {
         m_ordersWindow = new MyOrdersWindow(this);
     }
     m_ordersWindow->show();
@@ -132,7 +128,8 @@ void SearchWindow::on_myOrdersButton_clicked()
 
 void SearchWindow::on_profileButton_clicked()
 {
-    if (!m_profileWindow) {
+    if (!m_profileWindow)
+    {
         m_profileWindow = new ProfileWindow(this);
     }
     m_profileWindow->show();
@@ -168,7 +165,8 @@ void SearchWindow::handleGeneralError(const QString &message)
 void SearchWindow::populateFlightsTable(const QJsonArray &flights)
 {
     ui->flightsTable->setRowCount(flights.size());
-    for (int row = 0; row < flights.size(); ++row) {
+    for (int row = 0; row < flights.size(); ++row)
+    {
         const QJsonObject obj = flights.at(row).toObject();
         ui->flightsTable->setItem(row, 0, new QTableWidgetItem(obj.value("flight_number").toString()));
         ui->flightsTable->setItem(row, 1, new QTableWidgetItem(obj.value("origin").toString()));
@@ -184,12 +182,14 @@ void SearchWindow::populateFlightsTable(const QJsonArray &flights)
 int SearchWindow::currentSelectedFlightId() const
 {
     const QModelIndexList selected = ui->flightsTable->selectionModel()->selectedRows();
-    if (selected.isEmpty()) {
+    if (selected.isEmpty())
+    {
         return -1;
     }
 
     const int row = selected.first().row();
-    if (row < 0 || row >= m_latestFlights.size()) {
+    if (row < 0 || row >= m_latestFlights.size())
+    {
         return -1;
     }
     const QJsonObject obj = m_latestFlights.at(row).toObject();
@@ -199,12 +199,14 @@ int SearchWindow::currentSelectedFlightId() const
 QJsonObject SearchWindow::currentSelectedFlight() const
 {
     const QModelIndexList selected = ui->flightsTable->selectionModel()->selectedRows();
-    if (selected.isEmpty()) {
+    if (selected.isEmpty())
+    {
         return QJsonObject();
     }
 
     const int row = selected.first().row();
-    if (row < 0 || row >= m_latestFlights.size()) {
+    if (row < 0 || row >= m_latestFlights.size())
+    {
         return QJsonObject();
     }
     return m_latestFlights.at(row).toObject();
@@ -212,9 +214,12 @@ QJsonObject SearchWindow::currentSelectedFlight() const
 
 void SearchWindow::updateUserSummary()
 {
-    if (AppSession::instance().isLoggedIn()) {
+    if (AppSession::instance().isLoggedIn())
+    {
         ui->userSummaryLabel->setText(tr("当前用户：%1").arg(AppSession::instance().username()));
-    } else {
+    }
+    else
+    {
         ui->userSummaryLabel->setText(tr("未登录"));
     }
 }
@@ -222,19 +227,17 @@ void SearchWindow::updateUserSummary()
 void SearchWindow::setupFilterControls()
 {
     ui->cabinClassComboBox->setCurrentIndex(0);
-    const auto updateHint = [this]() {
+    const auto updateHint = [this]()
+    {
         updateFilterHint();
     };
 
-    connect(ui->cabinClassComboBox, &QComboBox::currentIndexChanged, this, [updateHint](int) {
-        updateHint();
-    });
-    connect(ui->withChildCheckBox, &QCheckBox::toggled, this, [updateHint](bool) {
-        updateHint();
-    });
-    connect(ui->withInfantCheckBox, &QCheckBox::toggled, this, [updateHint](bool) {
-        updateHint();
-    });
+    connect(ui->cabinClassComboBox, &QComboBox::currentIndexChanged, this, [updateHint](int)
+            { updateHint(); });
+    connect(ui->withChildCheckBox, &QCheckBox::toggled, this, [updateHint](bool)
+            { updateHint(); });
+    connect(ui->withInfantCheckBox, &QCheckBox::toggled, this, [updateHint](bool)
+            { updateHint(); });
 
     updateFilterHint();
 }
@@ -242,7 +245,8 @@ void SearchWindow::setupFilterControls()
 void SearchWindow::updateFilterHint()
 {
     QString cabinText;
-    switch (ui->cabinClassComboBox->currentIndex()) {
+    switch (ui->cabinClassComboBox->currentIndex())
+    {
     case 1:
         cabinText = tr("经济舱");
         break;
@@ -261,7 +265,8 @@ void SearchWindow::updateFilterHint()
 
 QString SearchWindow::currentCabinClassCode() const
 {
-    switch (ui->cabinClassComboBox->currentIndex()) {
+    switch (ui->cabinClassComboBox->currentIndex())
+    {
     case 1:
         return QStringLiteral("economy");
     case 2:
@@ -274,10 +279,12 @@ QString SearchWindow::currentCabinClassCode() const
 QStringList SearchWindow::selectedPassengerTypes() const
 {
     QStringList types;
-    if (ui->withChildCheckBox->isChecked()) {
+    if (ui->withChildCheckBox->isChecked())
+    {
         types << QStringLiteral("with_child");
     }
-    if (ui->withInfantCheckBox->isChecked()) {
+    if (ui->withInfantCheckBox->isChecked())
+    {
         types << QStringLiteral("with_infant");
     }
     return types;
@@ -286,14 +293,17 @@ QStringList SearchWindow::selectedPassengerTypes() const
 QString SearchWindow::passengerSummaryText() const
 {
     QStringList readable;
-    if (ui->withChildCheckBox->isChecked()) {
+    if (ui->withChildCheckBox->isChecked())
+    {
         readable << tr("带儿童");
     }
-    if (ui->withInfantCheckBox->isChecked()) {
+    if (ui->withInfantCheckBox->isChecked())
+    {
         readable << tr("带婴儿");
     }
 
-    if (readable.isEmpty()) {
+    if (readable.isEmpty())
+    {
         return tr("乘客类型：默认");
     }
     return tr("乘客类型：%1").arg(readable.join(QStringLiteral("、")));
@@ -302,52 +312,23 @@ QString SearchWindow::passengerSummaryText() const
 QStringList SearchWindow::passengerCandidates() const
 {
     QStringList candidates;
-    if (AppSession::instance().isLoggedIn()) {
+    if (AppSession::instance().isLoggedIn())
+    {
         const QString user = AppSession::instance().username();
-        if (!user.isEmpty()) {
+        if (!user.isEmpty())
+        {
             candidates << user;
         }
     }
     candidates << tr("本人") << tr("常用旅客");
-    if (ui->withChildCheckBox->isChecked()) {
+    if (ui->withChildCheckBox->isChecked())
+    {
         candidates << tr("随行儿童");
     }
-    if (ui->withInfantCheckBox->isChecked()) {
+    if (ui->withInfantCheckBox->isChecked())
+    {
         candidates << tr("携婴儿旅客");
     }
     candidates.removeDuplicates();
     return candidates;
-}
-
-void SearchWindow::on_myFavoritesButton_clicked()
-{
-    if (!m_favoritesWindow) {
-        m_favoritesWindow = new FavoritesWindow(this);
-        m_favoritesWindow->setUserId(AppSession::instance().userId());
-        m_favoritesWindow->setUsername(AppSession::instance().username());
-    }
-    m_favoritesWindow->show();
-    m_favoritesWindow->raise();
-    m_favoritesWindow->activateWindow();
-}
-
-void SearchWindow::on_addToFavoritesButton_clicked()
-{
-    int flightId = currentSelectedFlightId();
-    if (flightId <= 0) {
-        QMessageBox::warning(this, tr("提示"), tr("请先选择要收藏的航班"));
-        return;
-    }
-    
-    NetworkManager::instance().addFavoriteRequest(AppSession::instance().userId(), flightId);
-}
-
-void SearchWindow::handleAddFavoriteSuccess(const QString& message)
-{
-    QMessageBox::information(this, tr("成功"), message);
-}
-
-void SearchWindow::handleAddFavoriteFailed(const QString& message)
-{
-    QMessageBox::warning(this, tr("失败"), message);
 }

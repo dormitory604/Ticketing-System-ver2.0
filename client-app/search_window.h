@@ -9,10 +9,10 @@
 class MyOrdersWindow;
 class ProfileWindow;
 class BookingDialog;
-class FavoritesWindow;
 
-namespace Ui {
-class SearchWindow;
+namespace Ui
+{
+    class SearchWindow;
 }
 
 class SearchWindow : public QMainWindow
@@ -30,19 +30,15 @@ private slots:
     void on_searchButton_clicked();
     void on_bookButton_clicked();
     void on_myOrdersButton_clicked();
-    void on_myFavoritesButton_clicked();
     void on_profileButton_clicked();
-    void on_addToFavoritesButton_clicked();
 
-    void handleSearchResults(const QJsonArray& flights);
-    void handleBookingSuccess(const QJsonObject& bookingData);
-    void handleBookingFailed(const QString& message);
-    void handleGeneralError(const QString& message);
-    void handleAddFavoriteSuccess(const QString& message);
-    void handleAddFavoriteFailed(const QString& message);
+    void handleSearchResults(const QJsonArray &flights);
+    void handleBookingSuccess(const QJsonObject &bookingData);
+    void handleBookingFailed(const QString &message);
+    void handleGeneralError(const QString &message);
 
 private:
-    void populateFlightsTable(const QJsonArray& flights);
+    void populateFlightsTable(const QJsonArray &flights);
     int currentSelectedFlightId() const;
     QJsonObject currentSelectedFlight() const;
     void updateUserSummary();
@@ -57,7 +53,6 @@ private:
     QJsonArray m_latestFlights;
     MyOrdersWindow *m_ordersWindow;
     ProfileWindow *m_profileWindow;
-    FavoritesWindow *m_favoritesWindow;
 };
 
 #endif // SEARCH_WINDOW_H

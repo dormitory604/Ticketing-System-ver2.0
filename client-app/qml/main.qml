@@ -54,9 +54,6 @@ ApplicationWindow {
                 onRequestOrders: {
                     stackView.push(ordersPage)
                 }
-                onRequestFavorites: {
-                    stackView.push(favoritesPage)
-                }
                 onRequestProfile: {
                     stackView.push(profilePage)
                 }
@@ -71,17 +68,6 @@ ApplicationWindow {
         Component {
             id: ordersPage
             OrdersWindow {
-                bridge: mainWindow.bridge
-                onBackToSearch: {
-                    stackView.pop()
-                }
-            }
-        }
-        
-        // 收藏页面
-        Component {
-            id: favoritesPage
-            FavoritesWindow {
                 bridge: mainWindow.bridge
                 onBackToSearch: {
                     stackView.pop()

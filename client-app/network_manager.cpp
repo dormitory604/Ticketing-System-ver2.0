@@ -112,18 +112,6 @@ void NetworkManager::onReadyRead()
         {
             emit profileUpdateFailed(message);
         }
-        else if (action == "add_favorite")
-        {
-            emit addFavoriteFailed(message);
-        }
-        else if (action == "remove_favorite")
-        {
-            emit removeFavoriteFailed(message);
-        }
-        else if (action == "get_my_favorites")
-        {
-            emit generalError(message);
-        }
         else
         {
             emit generalError(message);
@@ -166,18 +154,6 @@ void NetworkManager::onReadyRead()
     else if (action == "update_profile")
     {
         emit profileUpdateSuccess(message, response["data"].toObject());
-    }
-    else if (action == "add_favorite")
-    {
-        emit addFavoriteSuccess(message);
-    }
-    else if (action == "remove_favorite")
-    {
-        emit removeFavoriteSuccess(message);
-    }
-    else if (action == "get_my_favorites")
-    {
-        emit myFavoritesResult(response["data"].toArray());
     }
     /*
     else if (action == "admin_add_flight") {
@@ -373,44 +349,6 @@ void NetworkManager::cancelOrderRequest(int bookingId)
 
     QJsonObject request;
     request["action"] = "cancel_order";
-    request["data"] = data;
-
-    sendJsonRequest(request);
-}
-
-void NetworkManager::addFavoriteRequest(int userId, int flightId)
-{
-    QJsonObject data;
-    data["user_id"] = userId;
-    data["flight_id"] = flightId;
-
-    QJsonObject request;
-    request["action"] = "add_favorite";
-    request["data"] = data;
-
-    sendJsonRequest(request);
-}
-
-void NetworkManager::removeFavoriteRequest(int userId, int flightId)
-{
-    QJsonObject data;
-    data["user_id"] = userId;
-    data["flight_id"] = flightId;
-
-    QJsonObject request;
-    request["action"] = "remove_favorite";
-    request["data"] = data;
-
-    sendJsonRequest(request);
-}
-
-void NetworkManager::getMyFavoritesRequest(int userId)
-{
-    QJsonObject data;
-    data["user_id"] = userId;
-
-    QJsonObject request;
-    request["action"] = "get_my_favorites";
     request["data"] = data;
 
     sendJsonRequest(request);
