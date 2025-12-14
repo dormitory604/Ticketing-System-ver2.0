@@ -14,6 +14,7 @@
 #include <QTimer>
 #include "database_manager.h"
 
+constexpr int MAX_RETURN_ROWS = 1000;
 
 class TcpServer : public QObject
 {

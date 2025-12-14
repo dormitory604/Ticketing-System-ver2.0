@@ -393,7 +393,7 @@ QJsonObject TcpServer::handleSearchFlights(const QJsonObject& data)
         sql += " WHERE " + where.join(" AND ");
     }
 
-    sql += " ORDER BY departure_time ASC";
+    sql += " ORDER BY departure_time ASC LIMIT :limit";
 
     QSqlQuery query(DatabaseManager::instance().database());
     if (!query.prepare(sql)) {
@@ -407,6 +407,8 @@ QJsonObject TcpServer::handleSearchFlights(const QJsonObject& data)
     for (auto it = binds.begin(); it != binds.end(); ++it) {
         query.bindValue(it.key(), it.value());
     }
+
+    query.bindValue(":limit", MAX_RETURN_ROWS);
 
     if (!query.exec()) {
         return {
@@ -566,10 +568,10 @@ QJsonObject TcpServer::handleBookFlight(const QJsonObject& data)
 // 获取我的订单
 QJsonObject TcpServer::handleGetMyOrders(const QJsonObject& data)
 {
-    int requesterId = data.value("user_id").toInt();
+    int userId = data.value("user_id").toInt();
     int targetUserId = data.value("target_user_id").toInt(); // 管理员可选
 
-    if (requesterId <= 0) {
+    if (userId <= 0) {
         return {
             {"status", "error"},
             {"message", "user_id 无效"},
@@ -584,7 +586,7 @@ QJsonObject TcpServer::handleGetMyOrders(const QJsonObject& data)
         FROM User
         WHERE user_id = :user_id
     )");
-    userQuery.bindValue(":user_id", requesterId);
+    userQuery.bindValue(":user_id", userId);
 
     if (!userQuery.exec() || !userQuery.next()) {
         return {
@@ -597,14 +599,14 @@ QJsonObject TcpServer::handleGetMyOrders(const QJsonObject& data)
     bool isAdmin = userQuery.value("is_admin").toInt() == 1;
 
     // 2. 决定最终查询的用户ID
-    int queryUserId = requesterId;
+    int queryUserId = userId;
 
     if (isAdmin && targetUserId > 0) {
         queryUserId = targetUserId;
     }
 
     // 非管理员越权
-    if (!isAdmin && targetUserId > 0 && targetUserId != requesterId) {
+    if (!isAdmin && targetUserId > 0 && targetUserId != userId) {
         return {
             {"status", "error"},
             {"message", "无权限查询他人订单"},
@@ -631,9 +633,11 @@ QJsonObject TcpServer::handleGetMyOrders(const QJsonObject& data)
         JOIN Flight f ON b.flight_id = f.flight_id
         WHERE b.user_id = :user_id
         ORDER BY b.booking_time DESC
+        LIMIT :limit
     )");
 
-    query.bindValue(":user_id", queryUserId);
+    query.bindValue(":user_id", userId);
+    query.bindValue(":limit", MAX_RETURN_ROWS);
 
     if (!query.exec()) {
         return {
@@ -857,7 +861,7 @@ QJsonObject TcpServer::handleAdminUpdateFlight(const QJsonObject& data)
     QString departureTime= data.value("departure_time").toString();
     QString arrivalTime  = data.value("arrival_time").toString();
     double price         = data.value("price").toDouble();
-    int totalSeats       = data.value("total_seats").toInt();     // FIX: seats → total_seats
+    int totalSeats       = data.value("total_seats").toInt();
     int remainingSeats   = data.value("remaining_seats").toInt();
 
     // 参数检查
@@ -878,7 +882,7 @@ QJsonObject TcpServer::handleAdminUpdateFlight(const QJsonObject& data)
         SELECT total_seats, remaining_seats
         FROM Flight
         WHERE flight_id = :flight_id
-    )");    // FIX: seats → total_seats
+    )");
 
     q1.bindValue(":flight_id", flightId);
 
@@ -930,7 +934,7 @@ QJsonObject TcpServer::handleAdminUpdateFlight(const QJsonObject& data)
             departure_time  = :departure_time,
             arrival_time    = :arrival_time,
             price           = :price,
-            total_seats     = :total_seats,        -- FIX
+            total_seats     = :total_seats,
             remaining_seats = :remaining_seats
         WHERE flight_id = :flight_id
     )");
@@ -941,7 +945,7 @@ QJsonObject TcpServer::handleAdminUpdateFlight(const QJsonObject& data)
     q2.bindValue(":departure_time",  departureTime);
     q2.bindValue(":arrival_time",    arrivalTime);
     q2.bindValue(":price",           price);
-    q2.bindValue(":total_seats",     totalSeats);        // FIX
+    q2.bindValue(":total_seats",     totalSeats);
     q2.bindValue(":remaining_seats", remainingSeats);
     q2.bindValue(":flight_id",       flightId);
 
@@ -1040,7 +1044,10 @@ QJsonObject TcpServer::handleAdminGetAllUsers()
             user_id, username, is_admin, created_at
         FROM User
         ORDER BY user_id ASC
+        LIMIT :limit
     )");
+
+    query.bindValue(":limit", MAX_RETURN_ROWS);
 
     if (!query.exec()) {
         return {
@@ -1096,7 +1103,10 @@ QJsonObject TcpServer::handleAdminGetAllBookings()
         JOIN User   ON Booking.user_id  = User.user_id
         JOIN Flight f ON Booking.flight_id = Flight.flight_id
         ORDER BY Booking.booking_time DESC
+        LIMIT :limit
     )");
+
+    query.bindValue(":limit", MAX_RETURN_ROWS);
 
     if (!query.exec()) {
         return {
@@ -1149,6 +1159,7 @@ QJsonObject TcpServer::handleAdminGetAllFlights()
                total_seats, remaining_seats, price, is_deleted
         FROM Flight
         ORDER BY departure_time ASC
+        LIMIT :limit
     )"))
     {
         return {
@@ -1158,6 +1169,7 @@ QJsonObject TcpServer::handleAdminGetAllFlights()
         };
     }
 
+    query.bindValue(":limit", MAX_RETURN_ROWS);
     QJsonArray arr;
 
     while (query.next()) {
