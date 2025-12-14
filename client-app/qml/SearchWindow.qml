@@ -292,6 +292,7 @@ Rectangle {
         ScrollView {
             Layout.fillWidth: true
             Layout.fillHeight: true
+            clip: true // keep flight list from drawing over the search bar
             
             ListView {
                 id: flightListView
