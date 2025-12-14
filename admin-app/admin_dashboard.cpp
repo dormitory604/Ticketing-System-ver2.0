@@ -72,8 +72,12 @@ void AdminDashboard::setupTables()
     ui->userTable->setSelectionBehavior(QAbstractItemView::SelectRows);
 
     // 设置订单表头
-    ui->bookingTable->setColumnCount(4);
-    ui->bookingTable->setHorizontalHeaderLabels({"订单ID", "用户ID", "航班ID", "状态"});
+    ui->bookingTable->setColumnCount(9);
+    ui->bookingTable->setHorizontalHeaderLabels({
+        "订单ID", "用户ID", "航班ID",
+        "用户名", "航班号", "出发/目的地", // 增加信息
+        "起飞时间", "状态", "预订时间" // 调整列名
+    });
     ui->bookingTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     ui->bookingTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     ui->bookingTable->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -89,9 +93,17 @@ void AdminDashboard::on_btnRefresh_clicked()
     // 马上查航班
     NetworkManager::instance().sendGetAllFlightsRequest();
 
-    NetworkManager::instance().sendAdminGetAllUsersRequest();
+    // 2. 延迟查用户
+    QTimer::singleShot(200, [this]()
+    {
+       NetworkManager::instance().sendAdminGetAllUsersRequest();
+    });
 
-    NetworkManager::instance().sendAdminGetAllBookingsRequest();
+    // 3. 延迟查订单
+    QTimer::singleShot(400, [this]()
+    {
+       NetworkManager::instance().sendAdminGetAllBookingsRequest();
+    });
 
 }
 
@@ -372,43 +384,63 @@ void AdminDashboard::updateBookingTable(const QJsonArray &bookings)
         int row = ui->bookingTable->rowCount();  // 获取行数
         ui->bookingTable->insertRow(row);  // 末尾新建一行
 
-        // 填入数据
-        ui->bookingTable->setItem(row, 0, new QTableWidgetItem(QString::number(obj["booking_id"].toInt())));
-        ui->bookingTable->setItem(row, 1, new QTableWidgetItem(QString::number(obj["user_id"].toInt())));
-        ui->bookingTable->setItem(row, 2, new QTableWidgetItem(QString::number(obj["flight_id"].toInt())));
-
-        // 1. 获取两个核心状态
+        // 提取核心数据
         int isFlightDeleted = obj["is_deleted"].toInt(); // 航班是否被删除
-        QString dbStatus = obj["status"].toString(); // 数据库里的订单
+        QString dbStatus = obj["status"].toString();     // 数据库里的订单状态
 
+        // 填入数据到 9 列
+        ui->bookingTable->setItem(row, 0, new QTableWidgetItem(QString::number(obj["booking_id"].toInt()))); // 订单ID (0)
+        ui->bookingTable->setItem(row, 1, new QTableWidgetItem(QString::number(obj["user_id"].toInt())));    // 用户ID (1)
+
+        ui->bookingTable->setItem(row, 2, new QTableWidgetItem(QString::number(obj["flight_id"].toInt())));   // 航班ID (2)
+        ui->bookingTable->setItem(row, 3, new QTableWidgetItem(obj["username"].toString())); // 用户名 (3)
+
+        // 航班号 (4)
+        ui->bookingTable->setItem(row, 4, new QTableWidgetItem(obj["flight_number"].toString()));
+
+        // 出发/目的地 (5)
+        QString originDest = QString("%1 -> %2").arg(obj["origin"].toString()).arg(obj["destination"].toString());
+        ui->bookingTable->setItem(row, 5, new QTableWidgetItem(originDest));
+
+        // 起飞时间 (6)
+        ui->bookingTable->setItem(row, 6, new QTableWidgetItem(obj["departure_time"].toString()));
+
+        // 状态逻辑 (7)
         QString displayStatus;
         QTableWidgetItem *statusItem;
 
-        // 2. 逻辑判断
+        // 逻辑判断
         // 优先级 1: 先判断 is_deleted
         if (isFlightDeleted == 1)
         {
             displayStatus = "航班已失效";
             statusItem = new QTableWidgetItem(displayStatus);
-            statusItem->setForeground(Qt::red); // 红色高亮，提示异常
+            statusItem->setForeground(Qt::red);
         }
         // 优先级 2: 再判断是否 cancelled
         else if (dbStatus == "cancelled")
         {
             displayStatus = "已取消";
             statusItem = new QTableWidgetItem(displayStatus);
-            statusItem->setForeground(Qt::gray); // 灰色，表示无效
+            statusItem->setForeground(Qt::gray);
         }
         // 优先级 3: 最后才是 confirmed
         else
         {
-            displayStatus = "已确认"; // confirmed
+            displayStatus = "已确认";
             statusItem = new QTableWidgetItem(displayStatus);
-            statusItem->setForeground(QColor("#52c41a")); // 绿色，正常
+            statusItem->setForeground(QColor("#52c41a"));
         }
 
-        ui->bookingTable->setItem(row, 3, statusItem);
+        ui->bookingTable->setItem(row, 7, statusItem); // 状态列 (7)
+
+        // 预订时间 (8)
+        ui->bookingTable->setItem(row, 8, new QTableWidgetItem(obj["booking_time"].toString()));
     }
+
+    // 确保调整列宽的代码在填充数据后执行
+    ui->bookingTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    ui->bookingTable->horizontalHeader()->setStretchLastSection(true);
 }
 
 // 提示操作成功

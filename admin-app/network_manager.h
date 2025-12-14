@@ -6,6 +6,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QByteArray>
+#include <QtEndian>
 
 class NetworkManager : public QObject
 {
@@ -86,8 +88,15 @@ private:
 
     RequestType m_lastRequestType = None;  // 记录上一次的操作，初始化为None
 
-    // 辅助发送函数
+    // 客户端接收缓冲区，用于定长消息处理
+    QByteArray m_readBuffer; // [新增]
+    quint32 m_expectedLen = 0; // [新增] 期望接收的下一帧长度
+
+    // 辅助发送函数 - 现应匹配服务器的定长协议
     void send(const QJsonObject& json);
+
+    // 辅助处理函数，将 JSON 对象分发给对应的槽
+    void processJsonResponse(const QJsonObject& response);
 
 private slots:
     void onReadyRead();      // 处理服务器回信
