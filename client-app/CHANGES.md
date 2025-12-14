@@ -20,11 +20,9 @@
 
 ### 1. CMake 构建（`client-app/CMakeLists.txt`）
 - 将所有 Session/Window/Dialog 文件加入 `PROJECT_SOURCES`，确保一站式构建。
-- 新增 `CLIENT_APP_USE_FAKE_SERVER` 选项。配置 `-DCLIENT_APP_USE_FAKE_SERVER=ON` 会为 `client-app` 目标定义 `USE_FAKE_SERVER` 宏，以开启本地假数据模式。
 
 ### 2. NetworkManager 扩展
 - `network_manager.h/.cpp`：新增 `sendRegisterRequest`, `bookFlightRequest`, `getMyOrdersRequest`, `cancelOrderRequest`, `updateProfileRequest` 以及配套成功/失败信号；`onReadyRead()` 根据 `action_response` 精细路由。
-- `USE_FAKE_SERVER` 模式下，`NetworkManager` 以 `emitFake*` 函数模拟登录/搜索/注册/预订/订单/取消/资料更新的响应，方便离线调试；默认情况下维持真实 TCP 通信。
 - `sendSearchRequest` 支持可选的 `cabin_class` 与 `passenger_types` 字段，并仅在用户选择时注入 JSON，契合 README 接口规范。
 
 ### 3. 登录窗口
@@ -146,8 +144,6 @@ connect(&NetworkManager::instance(), &NetworkManager::tagRegistrationFailed,
 - `AppSession` 会话管理
 
 #### 向后兼容
-- 原有 `USE_FAKE_SERVER` 模式继续支持
-- 本地模拟模式自动跳过 tag 注册
 - 服务器升级不影响客户端基本功能
 
 ### 技术特性
@@ -172,7 +168,6 @@ connect(&NetworkManager::instance(), &NetworkManager::tagRegistrationFailed,
 #### 编译要求
 - 需要链接 `Qt6::Core` 模块（用于 `QDateTime`, `QRandomGenerator`）
 - 现有 CMake 配置无需修改
-- 编译选项 `CLIENT_APP_USE_FAKE_SERVER` 继续有效
 
 #### 运行要求
 - 服务器端必须支持 tag 注册协议

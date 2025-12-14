@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.16)
 
 project(client-app VERSION 0.1 LANGUAGES CXX)
 
-option(CLIENT_APP_USE_FAKE_SERVER "Enable mock responses without a backend" OFF)
-
 # QML 模式下不需要 AUTOUIC
 # set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -90,10 +88,6 @@ target_link_libraries(client-app PRIVATE Qt${QT_VERSION_MAJOR}::Quick)
 target_link_libraries(client-app PRIVATE Qt${QT_VERSION_MAJOR}::QuickControls2)
 # 如果需要同时支持 Widgets（例如某些对话框），可以取消注释下面这行
 # target_link_libraries(client-app PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-
-if(CLIENT_APP_USE_FAKE_SERVER)
-    target_compile_definitions(client-app PRIVATE USE_FAKE_SERVER)
-endif()
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

@@ -9,10 +9,7 @@
 #include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
-    , m_registerWindow(nullptr)
-    , m_searchWindow(nullptr)
+    : QMainWindow(parent), ui(new Ui::MainWindow), m_registerWindow(nullptr), m_searchWindow(nullptr)
 {
     ui->setupUi(this);
 
@@ -33,28 +30,26 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
-    if (m_registerWindow) {
+    if (m_registerWindow)
+    {
         m_registerWindow->deleteLater();
     }
-    if (m_searchWindow) {
+    if (m_searchWindow)
+    {
         m_searchWindow->deleteLater();
     }
     delete ui;
 }
 
-
 // 当用户点击“登录”按钮时
 void MainWindow::on_loginButton_clicked()
 {
-#ifdef USE_FAKE_SERVER
-    Q_UNUSED(this);
-#else
     // 检查tag是否已注册
-    if (!NetworkManager::instance().isTagRegistered()) {
+    if (!NetworkManager::instance().isTagRegistered())
+    {
         QMessageBox::warning(this, "连接中", "正在与服务器建立连接，请稍后再试...");
         return;
     }
-#endif
 
     QString user = ui->usernameLineEdit->text();
     QString pass = ui->passwordLineEdit->text();
@@ -66,14 +61,15 @@ void MainWindow::on_loginButton_clicked()
 }
 
 // 登录成功的slot函数
-void MainWindow::onLoginSuccess(const QJsonObject& userData)
+void MainWindow::onLoginSuccess(const QJsonObject &userData)
 {
     // (userData 里有 user_id, is_admin 等信息, 可以保存起来)
     AppSession::instance().setCurrentUser(userData);
 
     QMessageBox::information(this, "成功", "登录成功!");
 
-    if (!m_searchWindow) {
+    if (!m_searchWindow)
+    {
         m_searchWindow = new SearchWindow();
     }
     m_searchWindow->show();
@@ -81,14 +77,15 @@ void MainWindow::onLoginSuccess(const QJsonObject& userData)
 }
 
 // 登录失败的slot函数
-void MainWindow::onLoginFailed(const QString& message)
+void MainWindow::onLoginFailed(const QString &message)
 {
     QMessageBox::warning(this, "失败", message);
 }
 
 void MainWindow::on_registerButton_clicked()
 {
-    if (!m_registerWindow) {
+    if (!m_registerWindow)
+    {
         m_registerWindow = new RegisterWindow(this);
     }
     m_registerWindow->show();
@@ -96,7 +93,7 @@ void MainWindow::on_registerButton_clicked()
     m_registerWindow->activateWindow();
 }
 
-void MainWindow::onGeneralError(const QString& message)
+void MainWindow::onGeneralError(const QString &message)
 {
     QMessageBox::critical(this, "网络错误", message);
 }
@@ -112,7 +109,7 @@ void MainWindow::onTagRegistered()
     qDebug() << "Tag注册成功，可以开始使用业务功能";
 }
 
-void MainWindow::onTagRegistrationFailed(const QString& message)
+void MainWindow::onTagRegistrationFailed(const QString &message)
 {
     QMessageBox::critical(this, "连接错误", QString("Tag注册失败: %1").arg(message));
 }

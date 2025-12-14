@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
     QmlBridge bridge;
     
     // 连接云端服务器 (43.136.42.69:12345)，若需本地调试可改回 127.0.0.1。
-    NetworkManager::instance().connectToServer("43.136.42.69", 12345);
+    NetworkManager::instance().connectToServer("127.0.0.1", 12345);
     
     // 创建 QML 引擎
     QQmlApplicationEngine engine;
