@@ -7,12 +7,25 @@ import "../components"
 
 Rectangle {
     id: searchWindow
-    color: "#f5f5f5"
     
     property var bridge
     signal requestOrders()
     signal requestProfile()
     signal requestLogout()
+    
+    // 背景图片
+    Image {
+        anchors.fill: parent
+        source: "qrc:/qml/assets/images/view_background.jpeg"
+        fillMode: Image.PreserveAspectCrop
+        
+        // 半透明遮罩
+        Rectangle {
+            anchors.fill: parent
+            color: "#000000"
+            opacity: 0.3
+        }
+    }
     
     // 预订对话框
     BookingDialog {
@@ -110,7 +123,8 @@ Rectangle {
                 
                 Text {
                     text: "当前用户: " + (bridge ? bridge.currentUsername : "")
-                    font.pixelSize: 14
+                    font.pixelSize: 16
+                    font.bold: true
                     color: "white"
                 }
                 
@@ -123,7 +137,8 @@ Rectangle {
                     }
                     contentItem: Text {
                         text: parent.text
-                        font.pixelSize: 14
+                        font.pixelSize: 16
+                        font.bold: true
                         color: "white"
                     }
                 }
@@ -138,7 +153,8 @@ Rectangle {
                     }
                     contentItem: Text {
                         text: parent.text
-                        font.pixelSize: 14
+                        font.pixelSize: 16
+                        font.bold: true
                         color: "white"
                     }
                 }
@@ -152,7 +168,8 @@ Rectangle {
                     }
                     contentItem: Text {
                         text: parent.text
-                        font.pixelSize: 14
+                        font.pixelSize: 16
+                        font.bold: true
                         color: "white"
                     }
                 }
@@ -164,6 +181,7 @@ Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 120
             color: "white"
+            opacity: 0.8
             border.color: "#e0e0e0"
             border.width: 1
             

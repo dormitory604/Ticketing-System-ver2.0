@@ -8,6 +8,8 @@
         <file>qml/pages/ProfileWindow.qml</file>
         <file>qml/dialogs/BookingDialog.qml</file>
         <file>qml/components/CalendarPicker.qml</file>
+        <file>qml/assets/images/background.jpeg</file>
+        <file>qml/assets/images/view_background.jpeg</file>
     </qresource>
 </RCC>
 

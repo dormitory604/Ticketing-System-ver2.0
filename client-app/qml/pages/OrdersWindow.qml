@@ -33,7 +33,8 @@ Rectangle {
                     }
                     contentItem: Text {
                         text: parent.text
-                        font.pixelSize: 14
+                        font.pixelSize: 18
+                        font.bold: true
                         color: "white"
                     }
                 }
@@ -56,7 +57,8 @@ Rectangle {
                     }
                     contentItem: Text {
                         text: parent.text
-                        font.pixelSize: 14
+                        font.pixelSize: 18
+                        font.bold: true
                         color: "white"
                     }
                 }
@@ -65,6 +67,7 @@ Rectangle {
         
         ScrollView {
             Layout.fillWidth: true
+            Layout.topMargin: 20
             Layout.fillHeight: true
             
             ListView {
