@@ -1038,18 +1038,20 @@ QJsonObject TcpServer::handleAdminDeleteFlight(const QJsonObject& data)
 // 管理员-获取所有用户
 QJsonObject TcpServer::handleAdminGetAllUsers()
 {
-    QSqlQuery query(DatabaseManager::instance().database());
-    query.prepare(R"(
+    QString sql = QString(R"(
         SELECT
-            user_id, username, is_admin, created_at
+            user_id,
+            username,
+            is_admin,
+            created_at
         FROM User
         ORDER BY user_id ASC
-        LIMIT :limit
-    )");
+        LIMIT %1
+    )").arg(MAX_RETURN_ROWS);
 
-    query.bindValue(":limit", MAX_RETURN_ROWS);
+    QSqlQuery query(DatabaseManager::instance().database());
 
-    if (!query.exec()) {
+    if (!query.exec(sql)) {
         return {
             {"status", "error"},
             {"message", "查询用户失败：" + query.lastError().text()},
@@ -1061,9 +1063,9 @@ QJsonObject TcpServer::handleAdminGetAllUsers()
 
     while (query.next()) {
         QJsonObject obj;
-        obj["user_id"]  = query.value("user_id").toInt();
-        obj["username"] = query.value("username").toString();
-        obj["is_admin"] = query.value("is_admin").toInt();
+        obj["user_id"]    = query.value("user_id").toInt();
+        obj["username"]   = query.value("username").toString();
+        obj["is_admin"]   = query.value("is_admin").toInt();
         obj["created_at"] = query.value("created_at").toString();
 
         users.append(obj);
@@ -1071,17 +1073,18 @@ QJsonObject TcpServer::handleAdminGetAllUsers()
 
     return {
         {"status", "success"},
-        {"message", "查询用户成功"},
+        {"message", users.size() >= MAX_RETURN_ROWS
+                        ? "查询用户成功（结果已限制为最多1000条）"
+                        : "查询用户成功"},
         {"data", users}
     };
 }
 
+
 // 管理员-获取所有订单（含航班信息）
 QJsonObject TcpServer::handleAdminGetAllBookings()
 {
-
-    QSqlQuery query(DatabaseManager::instance().database());
-    query.prepare(R"(
+    QString sql = QString(R"(
         SELECT
             b.booking_id,
             b.user_id,
@@ -1089,7 +1092,7 @@ QJsonObject TcpServer::handleAdminGetAllBookings()
             b.status,
             b.booking_time,
 
-            User.username,
+            u.username,
 
             f.flight_number,
             f.model,
@@ -1100,15 +1103,15 @@ QJsonObject TcpServer::handleAdminGetAllBookings()
             f.price,
             f.is_deleted
         FROM Booking b
-        JOIN User   ON Booking.user_id  = User.user_id
-        JOIN Flight f ON Booking.flight_id = Flight.flight_id
-        ORDER BY Booking.booking_time DESC
-        LIMIT :limit
-    )");
+        JOIN User   u ON b.user_id  = u.user_id
+        JOIN Flight f ON b.flight_id = f.flight_id
+        ORDER BY b.booking_time DESC
+        LIMIT %1
+    )").arg(MAX_RETURN_ROWS);
 
-    query.bindValue(":limit", MAX_RETURN_ROWS);
+    QSqlQuery query(DatabaseManager::instance().database());
 
-    if (!query.exec()) {
+    if (!query.exec(sql)) {
         return {
             {"status", "error"},
             {"message", "查询订单失败：" + query.lastError().text()},
@@ -1143,25 +1146,31 @@ QJsonObject TcpServer::handleAdminGetAllBookings()
 
     return {
         {"status", "success"},
-        {"message", "查询所有订单成功"},
+        {"message", bookings.size() >= MAX_RETURN_ROWS
+                        ? "查询所有订单成功（结果已限制为最多1000条）"
+                        : "查询所有订单成功"},
         {"data", bookings}
     };
 }
 
+
 // 管理员-获取所有航班列表
 QJsonObject TcpServer::handleAdminGetAllFlights()
 {
-    QSqlQuery query(DatabaseManager::instance().database());
+    constexpr int MAX_RETURN_ROWS = 1000;
 
-    if (!query.exec(R"(
+    QString sql = QString(R"(
         SELECT flight_id, flight_number, model, origin, destination,
                departure_time, arrival_time,
                total_seats, remaining_seats, price, is_deleted
         FROM Flight
         ORDER BY departure_time ASC
-        LIMIT :limit
-    )"))
-    {
+        LIMIT %1
+    )").arg(MAX_RETURN_ROWS);
+
+    QSqlQuery query(DatabaseManager::instance().database());
+
+    if (!query.exec(sql)) {
         return {
             {"status", "error"},
             {"message", "查询失败：" + query.lastError().text()},
@@ -1169,12 +1178,10 @@ QJsonObject TcpServer::handleAdminGetAllFlights()
         };
     }
 
-    query.bindValue(":limit", MAX_RETURN_ROWS);
     QJsonArray arr;
 
     while (query.next()) {
         QJsonObject obj;
-
         obj["flight_id"]       = query.value("flight_id").toInt();
         obj["flight_number"]   = query.value("flight_number").toString();
         obj["model"]           = query.value("model").toString();
@@ -1186,13 +1193,14 @@ QJsonObject TcpServer::handleAdminGetAllFlights()
         obj["remaining_seats"] = query.value("remaining_seats").toInt();
         obj["price"]           = query.value("price").toDouble();
         obj["is_deleted"]      = query.value("is_deleted").toInt();
-
         arr.append(obj);
     }
 
     return {
         {"status", "success"},
-        {"message", "查询成功"},
+        {"message", arr.size() >= MAX_RETURN_ROWS
+                        ? "查询成功（结果已限制为最多1000条）"
+                        : "查询成功"},
         {"data", arr}
     };
 }
