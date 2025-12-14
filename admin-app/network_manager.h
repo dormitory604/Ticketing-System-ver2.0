@@ -41,6 +41,9 @@ public:
     // 航班搜索（调用 client 端的接口）
     void sendSearchFlightsRequest(const QString& origin, const QString& destination, const QString& date);
 
+    // 取消指定订单（退票）
+    void sendAdminCancelOrderRequest(int bookingId);
+
     // 项目接口文档3.3中的5个管理员接口
     // 添加航班(对应server-app与管理员接口handleAdminAddFlight)
     void sendAdminAddFlightRequest(const QJsonObject& flightData);

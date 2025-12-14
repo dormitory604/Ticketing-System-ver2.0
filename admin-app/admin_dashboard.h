@@ -32,6 +32,10 @@ private slots:
     void updateUserTable(const QJsonArray &users);  // 填用户表
     void updateBookingTable(const QJsonArray &bookings);  // 填订单表
 
+    // 订单管理功能槽函数
+    void on_btnSearchUserOrders_clicked(); // 查询特定用户订单
+    void on_btnCancelOrder_clicked(); // 取消订单（退票）按钮
+
     // 处理操作成功/失败的弹窗
     void handleOperationSuccess(const QString &msg);
     void handleOperationFailed(const QString &msg);
@@ -44,6 +48,9 @@ private:
     int m_currentPage = 1;          // 当前页码
     const int m_pageSize = 50;      // 每页显示的行数
     int m_totalPages = 0;           // 总页数
+
+    // 订单管理页面的目标查询用户ID (用户点击查询按钮后设置)
+    int m_targetSearchUserId = -1;
 
     // 辅助函数：初始化表格表头
     void setupTables();

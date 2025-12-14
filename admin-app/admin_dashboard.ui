@@ -25,6 +25,7 @@
         <string>航班管理</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_2">
+        <!-- START: 航班搜索布局 -->
         <item>
          <widget class="QGroupBox" name="groupBox_Search">
           <property name="title">
@@ -78,6 +79,7 @@
           </layout>
          </widget>
         </item>
+        <!-- END: 航班搜索布局 -->
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout">
           <item>
@@ -126,10 +128,11 @@
         <item>
          <widget class="QTableWidget" name="flightTable">
           <property name="selectionBehavior">
-           <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+           <enum>QAbstractItemView::SelectRows</enum>
           </property>
          </widget>
         </item>
+        <!-- START: 航班分页布局 -->
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_2">
           <item>
@@ -145,7 +148,7 @@
              <string>Page 0/0 (0 条结果)</string>
             </property>
             <property name="alignment">
-             <set>Qt::AlignmentFlag::AlignCenter</set>
+             <set>Qt::AlignCenter</set>
             </property>
            </widget>
           </item>
@@ -158,6 +161,7 @@
           </item>
          </layout>
         </item>
+        <!-- END: 航班分页布局 -->
        </layout>
       </widget>
       <widget class="QWidget" name="tab_user">
@@ -168,7 +172,7 @@
         <item>
          <widget class="QTableWidget" name="userTable">
           <property name="selectionBehavior">
-           <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+           <enum>QAbstractItemView::SelectRows</enum>
           </property>
          </widget>
         </item>
@@ -179,10 +183,46 @@
         <string>订单管理</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_4">
+        <!-- START: 订单搜索布局 (新增) -->
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_4">
+          <item>
+           <widget class="QLabel" name="label_10">
+            <property name="text">
+             <string>用户ID搜索:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="txtSearchUserID"/>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btnSearchUserOrders">
+            <property name="text">
+             <string>查询用户订单</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Orientation::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <!-- END: 订单搜索布局 -->
         <item>
          <widget class="QTableWidget" name="bookingTable">
           <property name="selectionBehavior">
-           <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+           <enum>QAbstractItemView::SelectRows</enum>
           </property>
          </widget>
         </item>
