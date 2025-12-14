@@ -10,9 +10,9 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
-    // 尝试连接服务器
-    // (localhost = 127.0.0.1, 端口必须和服务器一致)
-    NetworkManager::instance().connectToServer("127.0.0.1", 12345);
+    // 尝试连接部署在云服务器的实例 (43.136.42.69:12345)。
+    // 如需调试本地 server-app，可把地址改回 127.0.0.1。
+    NetworkManager::instance().connectToServer("43.136.42.69", 12345);
 
     // 下面这个是自动翻译部分，由Qt提供，可以将软件自动翻译成英文版本。
     QTranslator translator;
