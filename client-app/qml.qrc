@@ -1,13 +1,13 @@
 <RCC>
     <qresource prefix="/">
         <file>qml/main.qml</file>
-        <file>qml/LoginWindow.qml</file>
-        <file>qml/RegisterWindow.qml</file>
-        <file>qml/SearchWindow.qml</file>
-        <file>qml/OrdersWindow.qml</file>
-        <file>qml/ProfileWindow.qml</file>
-        <file>qml/BookingDialog.qml</file>
-        <file>qml/CalendarPicker.qml</file>
+        <file>qml/pages/LoginWindow.qml</file>
+        <file>qml/pages/RegisterWindow.qml</file>
+        <file>qml/pages/SearchWindow.qml</file>
+        <file>qml/pages/OrdersWindow.qml</file>
+        <file>qml/pages/ProfileWindow.qml</file>
+        <file>qml/dialogs/BookingDialog.qml</file>
+        <file>qml/components/CalendarPicker.qml</file>
     </qresource>
 </RCC>
 

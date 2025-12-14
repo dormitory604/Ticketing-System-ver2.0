@@ -2,6 +2,9 @@ import QtQuick 2.15
 import QtQuick.Window 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import "qrc:/qml/pages"
+import "qrc:/qml/dialogs"
+import "qrc:/qml/components"
 
 ApplicationWindow {
     id: mainWindow
