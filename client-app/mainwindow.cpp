@@ -46,15 +46,7 @@ MainWindow::~MainWindow()
 // 当用户点击“登录”按钮时
 void MainWindow::on_loginButton_clicked()
 {
-#ifdef USE_FAKE_SERVER
-    Q_UNUSED(this);
-#else
-    // 检查tag是否已注册
-    if (!NetworkManager::instance().isTagRegistered()) {
-        QMessageBox::warning(this, "连接中", "正在与服务器建立连接，请稍后再试...");
-        return;
-    }
-#endif
+
 
     QString user = ui->usernameLineEdit->text();
     QString pass = ui->passwordLineEdit->text();
@@ -62,7 +54,7 @@ void MainWindow::on_loginButton_clicked()
     // 调用 NetworkManager 发送请求
     NetworkManager::instance().sendLoginRequest(user, pass);
 
-    // (这里可以加一个 loading 动画之类的（但是似乎也不会loading太久）)
+    // 这里可以加一个 loading 动画之类的（但是似乎也不会loading太久）
 }
 
 // 登录成功的slot函数
