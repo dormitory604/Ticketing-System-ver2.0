@@ -72,13 +72,14 @@ void AdminDashboard::setupTables()
     ui->userTable->setSelectionBehavior(QAbstractItemView::SelectRows);
 
     // 设置订单表头
-    ui->bookingTable->setColumnCount(9);
+    ui->bookingTable->setColumnCount(10);
     ui->bookingTable->setHorizontalHeaderLabels({
         "订单ID", "用户ID", "航班ID",
-        "用户名", "航班号", "出发/目的地", // 增加信息
-        "起飞时间", "状态", "预订时间" // 调整列名
+        "用户名", "航班号", "出发/目的地",
+        "起飞时间", "状态", "预订时间", "操作"
     });
-    ui->bookingTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    ui->bookingTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents); // 调整列宽
+    ui->bookingTable->horizontalHeader()->setStretchLastSection(true);
     ui->bookingTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     ui->bookingTable->setSelectionBehavior(QAbstractItemView::SelectRows);
 }
@@ -372,13 +373,82 @@ void AdminDashboard::updateUserTable(const QJsonArray &users)
     }
 }
 
+// 查询特定用户订单
+void AdminDashboard::on_btnSearchUserOrders_clicked()
+{
+    QString userIdStr = ui->txtSearchUserID->text().trimmed();
+
+    // 1. 检查输入是否有效
+    bool ok;
+    int userId = userIdStr.toInt(&ok);
+
+    if (!ok || userId <= 0) {
+        QMessageBox::warning(this, "警告", "请输入有效的用户ID！");
+        return;
+    }
+
+    // 2. 设置目标用户ID并调用 '获取所有订单' 接口 (该接口带有用户数据)
+    m_targetSearchUserId = userId;
+    NetworkManager::instance().sendAdminGetAllBookingsRequest();
+}
+
+// 取消订单（退票）按钮的槽函数
+void AdminDashboard::on_btnCancelOrder_clicked()
+{
+    // 1. 获取发送信号的按钮
+    QPushButton *button = qobject_cast<QPushButton*>(sender());
+    if (!button) return;
+
+    // 2. 从按钮的属性中获取 booking_id
+    int bookingId = button->property("bookingId").toInt();
+    QString status = button->property("orderStatus").toString();
+
+    if (bookingId <= 0) return;
+
+    // 3. 状态检查
+    if (status == "已取消" || status == "航班已失效") {
+        QMessageBox::warning(this, "操作无效", "该订单已取消或航班已失效，无法重复退票。");
+        return;
+    }
+
+    // 4. 二次确认
+    if (QMessageBox::question(this, "确认退票", QString("确定要取消订单ID %1 并退票吗？").arg(bookingId)) == QMessageBox::Yes)
+    {
+        // 5. 发送取消请求
+        NetworkManager::instance().sendAdminCancelOrderRequest(bookingId);
+    }
+}
+
 // 订单数据更新槽函数（接收服务器数据并填表）
 void AdminDashboard::updateBookingTable(const QJsonArray &bookings)
 {
     ui->bookingTable->setRowCount(0);  // 清空旧数据
 
-    // 遍历JSON数组
-    for (const QJsonValue &val : bookings)
+    // 过滤逻辑
+    QJsonArray bookingsToDisplay;
+    if (m_targetSearchUserId > 0)
+    {
+        // 如果正在搜索特定用户，则进行过滤
+        for (const QJsonValue &val : bookings)
+        {
+            QJsonObject obj = val.toObject();
+            if (obj["user_id"].toInt() == m_targetSearchUserId)
+            {
+                bookingsToDisplay.append(val);
+            }
+        }
+    }
+    else
+    {
+        // 否则，显示所有订单 (例如点击刷新时)
+        bookingsToDisplay = bookings;
+    }
+
+    // 重置过滤状态，确保下一次点击其他 Tab 或刷新能显示所有数据
+    m_targetSearchUserId = -1;
+
+    // 遍历要显示的 JSON 数组
+    for (const QJsonValue &val : bookingsToDisplay)
     {
         QJsonObject obj = val.toObject();  // 拿到单条订单信息
         int row = ui->bookingTable->rowCount();  // 获取行数
@@ -390,8 +460,8 @@ void AdminDashboard::updateBookingTable(const QJsonArray &bookings)
 
         // 填入数据到 9 列
         ui->bookingTable->setItem(row, 0, new QTableWidgetItem(QString::number(obj["booking_id"].toInt()))); // 订单ID (0)
+        // 这些数据来自 admin_get_all_bookings，现在是正确的
         ui->bookingTable->setItem(row, 1, new QTableWidgetItem(QString::number(obj["user_id"].toInt())));    // 用户ID (1)
-
         ui->bookingTable->setItem(row, 2, new QTableWidgetItem(QString::number(obj["flight_id"].toInt())));   // 航班ID (2)
         ui->bookingTable->setItem(row, 3, new QTableWidgetItem(obj["username"].toString())); // 用户名 (3)
 
@@ -436,6 +506,22 @@ void AdminDashboard::updateBookingTable(const QJsonArray &bookings)
 
         // 预订时间 (8)
         ui->bookingTable->setItem(row, 8, new QTableWidgetItem(obj["booking_time"].toString()));
+
+        // 操作列 (9)
+        QPushButton *cancelButton = new QPushButton("退票");
+        cancelButton->setProperty("bookingId", obj["booking_id"].toInt()); // 存储订单ID
+        cancelButton->setProperty("orderStatus", displayStatus); // 存储当前显示的状态
+
+        // 连接按钮的点击信号到槽函数
+        connect(cancelButton, &QPushButton::clicked, this, &AdminDashboard::on_btnCancelOrder_clicked);
+
+        // 如果已取消或航班已失效，则禁用按钮
+        if (displayStatus == "已取消" || displayStatus == "航班已失效")
+        {
+            cancelButton->setEnabled(false);
+        }
+
+        ui->bookingTable->setCellWidget(row, 9, cancelButton); // 放置按钮
     }
 
     // 确保调整列宽的代码在填充数据后执行

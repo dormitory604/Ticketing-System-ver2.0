@@ -214,6 +214,19 @@ void NetworkManager::sendAdminGetAllBookingsRequest()
     send(request);
 }
 
+// 取消指定订单（退票）
+void NetworkManager::sendAdminCancelOrderRequest(int bookingId)
+{
+    QJsonObject data;
+    data["booking_id"] = bookingId;
+
+    QJsonObject request;
+    request["action"] = "cancel_order"; // 复用客户端的取消订单接口
+    request["data"] = data;
+
+    send(request);
+}
+
 // 拆分出的 JSON 处理逻辑
 void NetworkManager::processJsonResponse(const QJsonObject& response)
 {
