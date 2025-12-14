@@ -366,7 +366,7 @@ QJsonObject TcpServer::handleSearchFlights(const QJsonObject& data)
     // 构建 SQL
     QString sql = R"(
         SELECT flight_id, flight_number, model, origin, destination,
-               departure_time, arrival_time, price, remaining_seats
+               departure_time, arrival_time, price, remaining_seats, total_seats
         FROM Flight
     )";
 
@@ -384,8 +384,7 @@ QJsonObject TcpServer::handleSearchFlights(const QJsonObject& data)
         binds[":destination"] = destination;
     }
     if (!date.isEmpty()) {
-        // departure_time LIKE '2025-12-05%'
-        where << "departure_time LIKE :date";
+        where << "departure_time LIKE :date";  // departure_time LIKE '2025-12-05%'
         binds[":date"] = date + "%";
     }
 
@@ -393,7 +392,7 @@ QJsonObject TcpServer::handleSearchFlights(const QJsonObject& data)
         sql += " WHERE " + where.join(" AND ");
     }
 
-    sql += " ORDER BY departure_time ASC LIMIT :limit";
+    sql += " ORDER BY departure_time ASC LIMIT " + QString::number(MAX_RETURN_ROWS);
 
     QSqlQuery query(DatabaseManager::instance().database());
     if (!query.prepare(sql)) {
@@ -408,7 +407,6 @@ QJsonObject TcpServer::handleSearchFlights(const QJsonObject& data)
         query.bindValue(it.key(), it.value());
     }
 
-    query.bindValue(":limit", MAX_RETURN_ROWS);
 
     if (!query.exec()) {
         return {
@@ -430,6 +428,7 @@ QJsonObject TcpServer::handleSearchFlights(const QJsonObject& data)
         f["departure_time"]  = query.value("departure_time").toString();
         f["arrival_time"]    = query.value("arrival_time").toString();
         f["price"]           = query.value("price").toDouble();
+        f["total_seats"]     = query.value("total_seats").toInt();
         f["remaining_seats"] = query.value("remaining_seats").toInt();
 
         flights.append(f);
