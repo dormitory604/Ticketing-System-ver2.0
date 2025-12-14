@@ -8,7 +8,7 @@
 #include <QtEndian>
 
 NetworkManager::NetworkManager(QObject *parent)
-    : QObject(parent), m_socket(nullptr), m_tagRegistered(false), m_protocolMode(ProtocolMode::LengthPrefixed), m_legacyFallbackAttempted(false), m_reconnectPending(false), m_lastPort(0)
+    : QObject(parent), m_socket(nullptr), m_tagRegistered(false), m_reconnectPending(false), m_lastPort(0)
 {
     m_socket = new QTcpSocket(this);
 
@@ -23,11 +23,6 @@ NetworkManager::~NetworkManager() {}
 
 void NetworkManager::connectToServer(const QString &host, quint16 port)
 {
-    if (host != m_lastHost || port != m_lastPort)
-    {
-        m_protocolMode = ProtocolMode::LengthPrefixed;
-        m_legacyFallbackAttempted = false;
-    }
     m_lastHost = host;
     m_lastPort = port;
     qInfo() << "连接到服务器" << host << ":" << port;
@@ -38,27 +33,7 @@ void NetworkManager::connectToServer(const QString &host, quint16 port)
 void NetworkManager::onReadyRead()
 {
     m_receiveBuffer.append(m_socket->readAll());
-
-    if (m_protocolMode == ProtocolMode::LengthPrefixed)
-    {
-        if (!m_tagRegistered && !m_legacyFallbackAttempted && looksLikePlainJsonBuffer())
-        {
-            qWarning() << "检测到服务器返回未带长度前缀的JSON，自动启用兼容模式";
-            m_protocolMode = ProtocolMode::PlainJson;
-            m_legacyFallbackAttempted = true;
-            processPlainJsonBuffer();
-            if (!m_tagRegistered)
-            {
-                fallbackToLegacyProtocol();
-            }
-            return;
-        }
-
-        processLengthPrefixedBuffer();
-        return;
-    }
-
-    processPlainJsonBuffer();
+    processLengthPrefixedBuffer();
 }
 
 void NetworkManager::processLengthPrefixedBuffer()
@@ -78,18 +53,6 @@ void NetworkManager::processLengthPrefixedBuffer()
 
         if (frameLength == 0 || frameLength > maxFrameSize)
         {
-            if (!m_tagRegistered && !m_legacyFallbackAttempted && looksLikePlainJsonBuffer())
-            {
-                m_protocolMode = ProtocolMode::PlainJson;
-                m_legacyFallbackAttempted = true;
-                processPlainJsonBuffer();
-                if (!m_tagRegistered)
-                {
-                    fallbackToLegacyProtocol();
-                }
-                return;
-            }
-
             qWarning() << "收到异常的帧长度:" << frameLength;
             emit generalError("收到异常的服务器响应 (帧长度)");
             m_receiveBuffer.clear();
@@ -112,126 +75,6 @@ void NetworkManager::processLengthPrefixedBuffer()
         {
             qWarning() << "收到无效的JSON响应 (非JSON)";
             emit generalError("收到无效的服务器响应 (非JSON)");
-            continue;
-        }
-
-        handleResponseObject(jsonDoc.object());
-    }
-}
-
-bool NetworkManager::looksLikePlainJsonBuffer() const
-{
-    for (char c : m_receiveBuffer)
-    {
-        if (c == ' ' || c == '\n' || c == '\r' || c == '\t')
-        {
-            continue;
-        }
-        return c == '{' || c == '[';
-    }
-    return false;
-}
-
-bool NetworkManager::extractPlainJsonMessage(QByteArray &buffer, QByteArray &message)
-{
-    auto isWhitespace = [](char c)
-    {
-        return c == ' ' || c == '\n' || c == '\r' || c == '\t';
-    };
-
-    int start = 0;
-    while (start < buffer.size() && isWhitespace(buffer.at(start)))
-    {
-        ++start;
-    }
-
-    if (start >= buffer.size())
-    {
-        buffer.clear();
-        return false;
-    }
-
-    char opening = buffer.at(start);
-    if (opening != '{' && opening != '[')
-    {
-        buffer.remove(0, start + 1);
-        return false;
-    }
-
-    int depth = 0;
-    bool inString = false;
-    bool escapeNext = false;
-
-    for (int i = start; i < buffer.size(); ++i)
-    {
-        char c = buffer.at(i);
-
-        if (escapeNext)
-        {
-            escapeNext = false;
-            continue;
-        }
-
-        if (c == '\\')
-        {
-            escapeNext = true;
-            continue;
-        }
-
-        if (c == '"')
-        {
-            inString = !inString;
-            continue;
-        }
-
-        if (inString)
-        {
-            continue;
-        }
-
-        if (c == '{' || c == '[')
-        {
-            ++depth;
-        }
-        else if (c == '}' || c == ']')
-        {
-            --depth;
-            if (depth == 0)
-            {
-                int end = i + 1;
-                while (end < buffer.size() && isWhitespace(buffer.at(end)))
-                {
-                    ++end;
-                }
-                message = buffer.mid(start, end - start);
-                buffer.remove(0, end);
-                return true;
-            }
-        }
-    }
-
-    if (start > 0)
-    {
-        buffer.remove(0, start);
-    }
-    return false;
-}
-
-void NetworkManager::processPlainJsonBuffer()
-{
-    while (true)
-    {
-        QByteArray message;
-        if (!extractPlainJsonMessage(m_receiveBuffer, message))
-        {
-            return;
-        }
-
-        QJsonDocument jsonDoc = QJsonDocument::fromJson(message);
-        if (jsonDoc.isNull() || !jsonDoc.isObject())
-        {
-            qWarning() << "收到无效的JSON响应 (Plain JSON)";
-            emit generalError("收到无效的服务器响应 (Plain JSON)");
             continue;
         }
 
@@ -338,33 +181,6 @@ void NetworkManager::handleResponseObject(const QJsonObject &response)
     }
 }
 
-void NetworkManager::fallbackToLegacyProtocol()
-{
-    if (m_protocolMode != ProtocolMode::PlainJson)
-    {
-        return;
-    }
-    if (m_lastHost.isEmpty() || m_reconnectPending)
-    {
-        return;
-    }
-
-    qWarning() << "服务器使用旧版JSON协议，切换至兼容模式重新连接";
-    m_reconnectPending = true;
-    m_tagRegistered = false;
-    m_clientTag.clear();
-    m_pendingRequests.clear();
-
-    if (m_socket->state() == QAbstractSocket::UnconnectedState)
-    {
-        reconnectToLastEndpoint();
-    }
-    else
-    {
-        m_socket->abort();
-    }
-}
-
 void NetworkManager::reconnectToLastEndpoint()
 {
     if (m_lastHost.isEmpty())
@@ -375,8 +191,7 @@ void NetworkManager::reconnectToLastEndpoint()
 
     QTimer::singleShot(200, this, [this]()
                        {
-        qInfo() << "重新连接服务器" << m_lastHost << ":" << m_lastPort
-                << (m_protocolMode == ProtocolMode::PlainJson ? "(Plain JSON)" : "(Framed JSON)");
+        qInfo() << "重新连接服务器" << m_lastHost << ":" << m_lastPort;
         if (!m_socket) {
             m_reconnectPending = false;
             return;
@@ -482,12 +297,6 @@ void NetworkManager::sendJsonRequest(const QJsonObject &request)
 void NetworkManager::writeFramedJson(const QJsonDocument &document)
 {
     QByteArray payload = document.toJson(QJsonDocument::Compact);
-    if (m_protocolMode == ProtocolMode::PlainJson)
-    {
-        m_socket->write(payload);
-        m_socket->write("\n");
-        return;
-    }
 
     quint32 length = static_cast<quint32>(payload.size());
 

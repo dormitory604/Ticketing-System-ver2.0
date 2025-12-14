@@ -82,12 +82,6 @@ private:
     NetworkManager(const NetworkManager &) = delete;
     NetworkManager &operator=(const NetworkManager &) = delete;
 
-    enum class ProtocolMode
-    {
-        LengthPrefixed,
-        PlainJson
-    };
-
     struct PendingRequest
     {
         QString action;
@@ -99,8 +93,6 @@ private:
     QString m_clientTag;
     QQueue<PendingRequest> m_pendingRequests;
     QByteArray m_receiveBuffer;
-    ProtocolMode m_protocolMode;
-    bool m_legacyFallbackAttempted;
     bool m_reconnectPending;
     QString m_lastHost;
     quint16 m_lastPort;
@@ -110,11 +102,7 @@ private:
     void emitActionFailed(const QString &action, const QString &message);
     QJsonObject detachPendingPayload(QString &action);
     void processLengthPrefixedBuffer();
-    void processPlainJsonBuffer();
-    bool extractPlainJsonMessage(QByteArray &buffer, QByteArray &message);
-    bool looksLikePlainJsonBuffer() const;
     void handleResponseObject(const QJsonObject &response);
-    void fallbackToLegacyProtocol();
     void reconnectToLastEndpoint();
 };
 
