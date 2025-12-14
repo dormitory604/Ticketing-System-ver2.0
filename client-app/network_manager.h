@@ -83,7 +83,12 @@ private:
     QString m_clientTag;
     QQueue<QString> m_pendingActions;
 
+    // 长度前缀分帧相关
+    QByteArray m_recvBuf;  // 接收缓冲区
+    quint32 m_expectedLen; // 期望的帧长度
+
     void sendJsonRequest(const QJsonObject &request);
+    void processFrame(const QByteArray &frame); // 处理单个完整帧
 };
 
 #endif // NETWORKMANAGER_H
