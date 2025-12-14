@@ -111,29 +111,10 @@ void NetworkManager::sendAdminLoginRequest(const QString& username, const QStrin
 // 获取航班
 void NetworkManager::sendGetAllFlightsRequest()
 {
-    m_requestQueue.append(FlightList); // 入队
+    m_lastRequestType = FlightList;  //记录：上一步的操作是获取航班
     QJsonObject request;
     request["action"] = "admin_get_all_flights";
     request["data"] = QJsonObject(); // 这个接口不需要 data 参数
-
-    send(request);
-}
-
-// 发送搜索请求
-void NetworkManager::sendAdminSearchFlightsRequest(const QString& origin, const QString& dest, const QString& date)
-{
-    // 搜索返回的还是航班列表，所以入队 FlightList，这样界面收到数据后会自动调用 updateFlightTable
-    m_requestQueue.append(FlightList);
-
-    QJsonObject data;
-    data["origin"] = origin;
-    data["destination"] = dest;
-    data["date"] = date;
-
-    QJsonObject request;
-    // 注意：Server端必须实现这个 "admin_search_flights" 的 action
-    request["action"] = "admin_search_flights";
-    request["data"] = data;
 
     send(request);
 }
@@ -178,7 +159,7 @@ void NetworkManager::sendAdminUpdateFlightRequest(int flightId, const QJsonObjec
 // 获取所有用户(对应handleAdminGetAllUsers)
 void NetworkManager::sendAdminGetAllUsersRequest()
 {
-    m_requestQueue.append(UserList); // 入队
+    m_lastRequestType = UserList; //记录：上一步的操作是获取所有用户
     QJsonObject request;
     request["action"] = "admin_get_all_users";  // 对应server-app中的管理员接口handleAdminGetAllUsers，表示这是获取所有用户
     request["data"] = QJsonObject(); // 空数据
@@ -189,7 +170,7 @@ void NetworkManager::sendAdminGetAllUsersRequest()
 // 获取所有订单(对应handleAdminGetAllBookings)
 void NetworkManager::sendAdminGetAllBookingsRequest()
 {
-    m_requestQueue.append(BookingList); // 入队
+    m_lastRequestType = BookingList;  // 记录：上一步的操作是获取所有订单
     QJsonObject request;
     request["action"] = "admin_get_all_bookings";  // 对应server-app中的管理员接口handleAdminGetAllBookings，表示这是获取所有订单
     request["data"] = QJsonObject();
@@ -200,165 +181,111 @@ void NetworkManager::sendAdminGetAllBookingsRequest()
 // 信息接收逻辑
 void NetworkManager::onReadyRead()
 {
-    // 1. 将新收到的数据追加到缓冲区
-    m_buffer.append(m_socket->readAll());
+    // 读取所有缓冲区数据
+    QByteArray data = m_socket->readAll();
+    // 把二进制还原为JSON格式
+    QJsonDocument doc = QJsonDocument::fromJson(data);
 
-    // 2. 循环尝试解析缓冲区的数据
-    // (这是为了处理粘包：一次收到多条 JSON，或者拆包：数据没收全)
-    while (!m_buffer.isEmpty())
+    // 检查有没有无效数据
+    if (doc.isNull() || !doc.isObject())
     {
-        QJsonParseError parseError;
-        QJsonDocument doc = QJsonDocument::fromJson(m_buffer, &parseError);
-
-        if (parseError.error == QJsonParseError::NoError)
-        {
-            // 解析成功，说明缓冲区里包含了一条完整的 JSON
-            if (doc.isObject())
-            {
-                processMessage(doc.object());
-            }
-
-            // 解析处理完这一条后，清空缓冲区
-            m_buffer.clear();
-        }
-        else if (parseError.error == QJsonParseError::UnterminatedObject ||
-                 parseError.error == QJsonParseError::UnterminatedArray ||
-                 parseError.error == QJsonParseError::UnterminatedString)
-        {
-            break; // 继续等待后续数据
-        }
-        else
-        {
-            // 解析发生其他错误（可能是数据乱码），为防止程序卡死，清空缓冲区
-            qWarning() << "JSON 格式错误，丢弃数据:" << parseError.errorString();
-            m_buffer.clear();
-            break;
-        }
+        qWarning() << "收到无效数据:" << data;
+        return;
     }
-}
 
-// 提取出来的消息处理函数
-void NetworkManager::processMessage(const QJsonObject& root)
-{
+    // 提取通用信息
+    QJsonObject root = doc.object();
+    // 状态：是"success"还是"error"
     QString status = root["status"].toString();
+    // 留言：服务器附带的一句话，比如"登录成功"或"密码错误"
     QString message = root["message"].toString();
+    // 信息：用QJsonValue，因为它可能是个对象，也可能是个数组，还可能是空的
     QJsonValue rawData = root["data"];
+    // 打印接收到的信息
+    qDebug() << "S2C 收到:" << root;
 
-    qDebug() << "S2C 处理:" << root;
-
-    // 1. 错误处理
+    // 错误处理
     if (status == "error")
     {
-        // 优先处理具体的登录错误
+        // 如果是登录失败，发送登录失败信号
         if (message.contains("用户名或密码错误"))
         {
             emit loginResult(false, false, message);
         }
         else
         {
-            // 其他通用错误（如数据库错误、权限不足等）
+            // 其他通用错误，谁连接这个信号，谁就弹窗报错
             emit adminOperationFailed(message);
-        }
-
-        // 如果请求失败了，必须把队列头部的 Pending 请求移除！
-        // 否则下一个成功的请求会匹配到这个错误的类型上，导致错位。
-        if (!m_requestQueue.isEmpty())
-        {
-            // 假设错误的响应对应的是最早发出的那个请求
-            m_requestQueue.removeFirst();
-            qDebug() << "错误发生，移除队列头部请求，剩余:" << m_requestQueue.size();
         }
         return;
     }
 
-    // 2. 登录成功
-    // 特征：data 是对象 且 包含 is_admin
+    // 检查接收到的信息是什么信息
+    // 1. 判断是否是【登录成功】：特征: data是对象，且包含"is_admin"字段
     if (rawData.isObject() && rawData.toObject().contains("is_admin"))
     {
+        // 把is_admin的值提取出来，是1则为管理员，是0则不是管理员
         bool isAdmin = (rawData.toObject()["is_admin"].toInt() == 1);
+        // 通知登录窗口
         emit loginResult(true, isAdmin, message);
         return;
     }
 
-    // 3. 列表数据 (Array)
-    // 凡是返回数组的，肯定是查询请求 (Get Flights/Users/Bookings)
+    // 2. 判断是否是【列表数据】：航班、用户、订单
     if (rawData.isArray())
     {
         QJsonArray arr = rawData.toArray();
-        RequestType type = None;
 
-        // A. 优先使用队列匹配
-        if (!m_requestQueue.isEmpty())
+        // 如果数组为空，根据上一步的操作做出回应
+        if (arr.isEmpty())
         {
-            type = m_requestQueue.takeFirst(); // 取出并移除
+            if (m_lastRequestType == FlightList) // 上一步是获取航班
+            {
+                emit allFlightsReceived(arr); // 发送空数组，界面会被清空
+            }
+            else if (m_lastRequestType == UserList) // 上一步是获取用户信息
+            {
+                emit allUsersReceived(arr);
+            }
+            else if (m_lastRequestType == BookingList) // 上一步是获取订单信息
+            {
+                emit allBookingsReceived(arr);
+            }
         }
-        // B. 如果队列意外为空，尝试内容推断
         else
         {
-            if (!arr.isEmpty())
+            // 拿出数组中的第一列，查看是什么列表
+            QJsonObject firstItem = arr.first().toObject();
+
+
+            // 航班列表特征: 有 "flight_number"
+            if (firstItem.contains("flight_number"))
             {
-                QJsonObject first = arr.first().toObject();
-                if (first.contains("flight_number")) type = FlightList;
-                else if (first.contains("username")) type = UserList;
-                else if (first.contains("booking_id")) type = BookingList;
+                emit allFlightsReceived(arr);
+            }
+            // 用户列表特征: 有 "username" 但没有 "flight_number"
+            else if (firstItem.contains("username"))
+            {
+                emit allUsersReceived(arr);
+            }
+
+            // 订单列表特征: 有 "booking_id"
+            else if (firstItem.contains("booking_id"))
+            {
+                emit allBookingsReceived(arr);
             }
         }
 
-        // 分发信号
-        // 注意：即使 arr 为空，也要发送信号，以便界面清空表格
-        if (type == FlightList) emit allFlightsReceived(arr);
-        else if (type == UserList) emit allUsersReceived(arr);
-        else if (type == BookingList) emit allBookingsReceived(arr);
-
-        return; // 处理完列表后直接返回，不要往下走到 Case 4
+        // 重置状态
+        m_lastRequestType = None;
+        return;
     }
 
-    // 4. 通用操作成功
-    // 特征：status=success 且 data 不是数组 (通常是 null 或 空对象)
-    // 适用于：添加/删除/修改 航班
-    if (status == "success")
+    // 3. 判断是否是【操作成功】（添加、删除等）：特征: data是null或空对象，但status是success
+    if (status == "success" && (rawData.isNull() || rawData.toObject().isEmpty()))
     {
-        // 修复Bug：如果是 Tag 注册成功的消息，不要弹窗，直接忽略
-        if (message == "Tag registered")
-        {
-            return;
-        }
-
-        // 只有真正的操作（添加、删除等）才弹窗
+        // 排除掉查询返回空数组的情况，这里主要指 INSERT/DELETE/UPDATE 的成功响应
+        // 只有非查询类操作才会返回 null data (根据文档)
         emit adminOperationSuccess(message);
     }
-}
-
-// 发送搜索订单请求
-void NetworkManager::sendAdminSearchBookingsRequest(const QString& bookingId, const QString& username)
-{
-    // 告诉接收端，接下来收到的数组是订单列表
-    m_requestQueue.append(BookingList);
-
-    QJsonObject data;
-    data["booking_id"] = bookingId;
-    data["username"] = username;
-
-    QJsonObject request;
-    // 对应 Server 端需要实现的 handleAdminSearchBookings
-    request["action"] = "admin_search_bookings";
-    request["data"] = data;
-
-    send(request);
-}
-
-// 发送取消订单请求
-void NetworkManager::sendAdminCancelBookingRequest(int bookingId)
-{
-    // 这是一个操作动作，不返回列表，所以不需要 m_requestQueue.append
-
-    QJsonObject data;
-    data["booking_id"] = bookingId;
-
-    QJsonObject request;
-    // 对应 Server 端需要实现的 handleAdminCancelBooking
-    request["action"] = "admin_cancel_booking";
-    request["data"] = data;
-
-    send(request);
 }
