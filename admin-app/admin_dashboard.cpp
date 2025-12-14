@@ -19,6 +19,13 @@ AdminDashboard::AdminDashboard(QWidget *parent)
     // 应用样式美化
     applyStyles();
 
+    // 设置默认搜索日期和分页按钮状态
+    QDate defaultDate = QDate::fromString("2025-12-12", "yyyy-MM-dd");
+    ui->dtSearchDate->setDate(defaultDate);
+    ui->dtSearchDate->setCalendarPopup(true);
+    ui->btnPrevPage->setEnabled(false);
+    ui->btnNextPage->setEnabled(false);
+
     // 连接NetworkManager的信号
     NetworkManager *nm = &NetworkManager::instance();
 
@@ -75,20 +82,17 @@ void AdminDashboard::setupTables()
 // 点击“刷新”按钮
 void AdminDashboard::on_btnRefresh_clicked()
 {
+    // 清空搜索栏，表示获取所有航班
+    ui->txtSearchOrigin->clear();
+    ui->txtSearchDestination->clear();
+
     // 马上查航班
     NetworkManager::instance().sendGetAllFlightsRequest();
 
-    // 延迟200毫秒查用户
-    QTimer::singleShot(200, [this]()
-    {
-        NetworkManager::instance().sendAdminGetAllUsersRequest();
-    });
+    NetworkManager::instance().sendAdminGetAllUsersRequest();
 
-    // 延迟400毫秒查订单
-    QTimer::singleShot(400, [this]()
-    {
-        NetworkManager::instance().sendAdminGetAllBookingsRequest();
-    });
+    NetworkManager::instance().sendAdminGetAllBookingsRequest();
+
 }
 
 // 点击“删除”按钮
@@ -195,15 +199,53 @@ void AdminDashboard::on_btnEditFlight_clicked()
 // 航班数据更新槽函数（接收服务器数据并填表）
 void AdminDashboard::updateFlightTable(const QJsonArray &flights)
 {
+    // 1. 存储所有过滤后的数据
+    m_allFilteredFlights = flights;
+
+    // 2. 计算分页状态
+    int totalItems = m_allFilteredFlights.size();
+    m_totalPages = qCeil((double)totalItems / m_pageSize);
+
+    // 确保当前页码有效
+    m_currentPage = 1;
+    if (m_totalPages == 0) m_currentPage = 0;
+
+    // 3. 显示当前页
+    displayCurrentPageFlights();
+}
+
+// 辅助函数：根据 m_currentPage 和 m_pageSize 填充表格
+void AdminDashboard::displayCurrentPageFlights()
+{
     ui->flightTable->setRowCount(0);  // 清空旧数据
 
-    // 遍历JSON数组
-    for (const QJsonValue &val : flights)
+    if (m_allFilteredFlights.isEmpty())
     {
+        // 更新分页信息
+        ui->lblPageInfo->setText("Page 0/0 (0 条结果)");
+        ui->btnPrevPage->setEnabled(false);
+        ui->btnNextPage->setEnabled(false);
+        return;
+    }
 
-        QJsonObject obj = val.toObject();  //拿到单条航班信息
-        int row = ui->flightTable->rowCount();  // 获取行数
-        ui->flightTable->insertRow(row);  // 末尾新建一行
+    // 计算起始索引和结束索引
+    int totalItems = m_allFilteredFlights.size();
+    int startIndex = (m_currentPage - 1) * m_pageSize;
+    int endIndex = qMin(startIndex + m_pageSize, totalItems);
+
+    // 更新分页信息
+    ui->lblPageInfo->setText(QString("Page %1/%2 (%3 条结果)").arg(m_currentPage).arg(m_totalPages).arg(totalItems));
+
+    // 启用/禁用分页按钮
+    ui->btnPrevPage->setEnabled(m_currentPage > 1);
+    ui->btnNextPage->setEnabled(m_currentPage < m_totalPages);
+
+    // 遍历当前页的 JSON 数据并填充表格
+    for (int i = startIndex; i < endIndex; ++i)
+    {
+        QJsonObject obj = m_allFilteredFlights.at(i).toObject();
+        int row = ui->flightTable->rowCount();
+        ui->flightTable->insertRow(row);
 
         // 填入数据
         ui->flightTable->setItem(row, 0, new QTableWidgetItem(QString::number(obj["flight_id"].toInt())));
@@ -214,6 +256,7 @@ void AdminDashboard::updateFlightTable(const QJsonArray &flights)
         ui->flightTable->setItem(row, 5, new QTableWidgetItem(obj["departure_time"].toString()));
         ui->flightTable->setItem(row, 6, new QTableWidgetItem(obj["arrival_time"].toString()));
         ui->flightTable->setItem(row, 7, new QTableWidgetItem(QString::number(obj["price"].toDouble())));
+
         // 合并显示总座和余票
         int total = obj["total_seats"].toInt();
         int remain = obj["remaining_seats"].toInt();
@@ -222,7 +265,6 @@ void AdminDashboard::updateFlightTable(const QJsonArray &flights)
         // 处理 is_deleted 状态
         int isDeleted = obj["is_deleted"].toInt();
         QTableWidgetItem *statusItem;
-
         if (isDeleted == 1)
         {
             statusItem = new QTableWidgetItem("已删除");
@@ -243,6 +285,42 @@ void AdminDashboard::updateFlightTable(const QJsonArray &flights)
         }
 
         ui->flightTable->setItem(row, 9, statusItem); // 填入第10列
+    }
+
+    // 自动调整列宽
+    ui->flightTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    ui->flightTable->horizontalHeader()->setStretchLastSection(true);
+}
+
+// 搜索航班
+void AdminDashboard::on_btnSearchFlight_clicked()
+{
+    // 1. 从UI获取搜索参数
+    QString origin = ui->txtSearchOrigin->text();
+    QString destination = ui->txtSearchDestination->text();
+    QString date = ui->dtSearchDate->date().toString("yyyy-MM-dd"); // 格式化日期
+
+    // 2. 调用 NetworkManager 发送请求
+    NetworkManager::instance().sendSearchFlightsRequest(origin, destination, date);
+}
+
+// 上一页
+void AdminDashboard::on_btnPrevPage_clicked()
+{
+    if (m_currentPage > 1)
+    {
+        m_currentPage--;
+        displayCurrentPageFlights();
+    }
+}
+
+// 下一页
+void AdminDashboard::on_btnNextPage_clicked()
+{
+    if (m_currentPage < m_totalPages)
+    {
+        m_currentPage++;
+        displayCurrentPageFlights();
     }
 }
 

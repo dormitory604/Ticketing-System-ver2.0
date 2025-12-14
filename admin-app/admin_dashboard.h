@@ -23,6 +23,9 @@ private slots:
     void on_btnDeleteFlight_clicked();  // 点击删除
     void on_btnEditFlight_clicked();  // 点击修改
     void on_btnRefresh_clicked();  // 点击刷新
+    void on_btnSearchFlight_clicked(); // 搜索按钮
+    void on_btnPrevPage_clicked();   // 上一页
+    void on_btnNextPage_clicked();   // 下一页
 
     // NetworkManager信号接收槽
     void updateFlightTable(const QJsonArray &flights);  // 填航班表
@@ -36,8 +39,17 @@ private slots:
 private:
     Ui::AdminDashboard *ui;
 
+    // 航班分页状态变量
+    QJsonArray m_allFilteredFlights; // 存储服务器返回的所有（最多1000条）过滤后的航班数据
+    int m_currentPage = 1;          // 当前页码
+    const int m_pageSize = 50;      // 每页显示的行数
+    int m_totalPages = 0;           // 总页数
+
     // 辅助函数：初始化表格表头
     void setupTables();
+
+    // 辅助函数：根据 m_currentPage 和 m_pageSize 填充表格
+    void displayCurrentPageFlights();
 
     // 样式美化函数
     void applyStyles();

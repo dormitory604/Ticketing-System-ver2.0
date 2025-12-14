@@ -113,8 +113,36 @@ void NetworkManager::sendGetAllFlightsRequest()
 {
     m_lastRequestType = FlightList;  //记录：上一步的操作是获取航班
     QJsonObject request;
+    // 使用 admin 接口获取所有航班（已在服务端限制1000条）
     request["action"] = "admin_get_all_flights";
     request["data"] = QJsonObject(); // 这个接口不需要 data 参数
+
+    send(request);
+}
+
+// 航班搜索请求 (调用 handleSearchFlights 接口)
+void NetworkManager::sendSearchFlightsRequest(const QString& origin, const QString& destination, const QString& date)
+{
+    m_lastRequestType = FlightList;  //记录：上一步的操作是获取航班
+
+    QJsonObject data;
+
+    // 仅添加非空字段，让服务器动态构建 SQL
+    if (!origin.isEmpty()) {
+        data["origin"] = origin;
+    }
+    if (!destination.isEmpty()) {
+        data["destination"] = destination;
+    }
+    // 假设日期总是有效且不为空（由 QDateEdit 保证）
+    if (!date.isEmpty()) {
+        data["date"] = date;
+    }
+
+
+    QJsonObject request;
+    request["action"] = "search_flights"; // 使用客户端的通用搜索接口
+    request["data"] = data;
 
     send(request);
 }
