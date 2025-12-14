@@ -20,12 +20,11 @@ class QmlBridge : public QObject
     
     // 搜索相关
     Q_PROPERTY(QVariantList searchResults READ searchResults NOTIFY searchResultsChanged)
+    Q_PROPERTY(bool searchInProgress READ searchInProgress NOTIFY searchInProgressChanged)
     
     // 订单相关
     Q_PROPERTY(QVariantList myOrders READ myOrders NOTIFY myOrdersChanged)
-    
-    // 收藏相关
-    Q_PROPERTY(QVariantList myFavorites READ myFavorites NOTIFY myFavoritesChanged)
+    Q_PROPERTY(bool ordersInProgress READ ordersInProgress NOTIFY ordersInProgressChanged)
 
 public:
     explicit QmlBridge(QObject *parent = nullptr);
@@ -36,7 +35,8 @@ public:
     bool isLoggedIn() const { return AppSession::instance().userId() > 0; }
     QVariantList searchResults() const { return m_searchResults; }
     QVariantList myOrders() const { return m_myOrders; }
-    QVariantList myFavorites() const { return m_myFavorites; }
+    bool searchInProgress() const { return m_searchInProgress; }
+    bool ordersInProgress() const { return m_ordersInProgress; }
 
 public slots:
     // 登录/注册
@@ -55,11 +55,6 @@ public slots:
     void getMyOrders();
     void cancelOrder(int bookingId);
     
-    // 收藏
-    void getMyFavorites();
-    void addFavorite(int flightId);
-    void removeFavorite(int flightId);
-    
     // 个人资料
     void updateProfile(const QString& username, const QString& password);
     
@@ -67,7 +62,6 @@ public slots:
     void showRegisterWindow();
     void showSearchWindow();
     void showOrdersWindow();
-    void showFavoritesWindow();
     void showProfileWindow();
     void closeCurrentWindow();
 
@@ -78,7 +72,6 @@ signals:
     void isLoggedInChanged();
     void searchResultsChanged();
     void myOrdersChanged();
-    void myFavoritesChanged();
     
     // 操作结果信号
     void loginSuccess(const QJsonObject& userData);
@@ -91,11 +84,8 @@ signals:
     void ordersUpdated();
     void cancelOrderSuccess(const QString& message);
     void cancelOrderFailed(const QString& message);
-    void favoritesUpdated();
-    void addFavoriteSuccess(const QString& message);
-    void addFavoriteFailed(const QString& message);
-    void removeFavoriteSuccess(const QString& message);
-    void removeFavoriteFailed(const QString& message);
+    void searchInProgressChanged();
+    void ordersInProgressChanged();
     void profileUpdateSuccess(const QString& message, const QJsonObject& userData);
     void profileUpdateFailed(const QString& message);
     void errorOccurred(const QString& message);
@@ -104,7 +94,6 @@ signals:
     void requestShowRegister();
     void requestShowSearch();
     void requestShowOrders();
-    void requestShowFavorites();
     void requestShowProfile();
     void requestCloseWindow();
 
@@ -117,13 +106,10 @@ private slots:
     void onBookingSuccess(const QJsonObject& bookingData);
     void onBookingFailed(const QString& message);
     void onMyOrdersResult(const QJsonArray& orders);
+    void onMyOrdersFailed(const QString& message);
     void onCancelOrderSuccess(const QString& message);
     void onCancelOrderFailed(const QString& message);
-    void onMyFavoritesResult(const QJsonArray& favorites);
-    void onAddFavoriteSuccess(const QString& message);
-    void onAddFavoriteFailed(const QString& message);
-    void onRemoveFavoriteSuccess(const QString& message);
-    void onRemoveFavoriteFailed(const QString& message);
+    void onSearchFailed(const QString& message);
     void onProfileUpdateSuccess(const QString& message, const QJsonObject& userData);
     void onProfileUpdateFailed(const QString& message);
     void onGeneralError(const QString& message);
@@ -132,7 +118,9 @@ private slots:
 private:
     QVariantList m_searchResults;
     QVariantList m_myOrders;
-    QVariantList m_myFavorites;
+    bool m_searchInProgress{false};
+    bool m_ordersInProgress{false};
+    QJsonObject m_pendingProfileUpdate;
     
     // 辅助函数：将 QJsonArray 转换为 QVariantList
     static QVariantList jsonArrayToVariantList(const QJsonArray& jsonArray);

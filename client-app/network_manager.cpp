@@ -1,14 +1,15 @@
 #include "network_manager.h"
 
+#include "app_session.h"
+
 #include <QTimer>
 #include <QDateTime>
 #include <QRandomGenerator>
+#include <QtEndian>
 
-NetworkManager::NetworkManager(QObject *parent) : QObject(parent), m_tagRegistered(false)
+NetworkManager::NetworkManager(QObject *parent)
+    : QObject(parent), m_socket(nullptr), m_tagRegistered(false), m_reconnectPending(false), m_lastPort(0)
 {
-#ifdef USE_FAKE_SERVER
-    m_socket = nullptr;
-#else
     m_socket = new QTcpSocket(this);
 
     // 绑定 QtSocket 的内置信号到我们自己的槽
@@ -16,204 +17,227 @@ NetworkManager::NetworkManager(QObject *parent) : QObject(parent), m_tagRegister
     connect(m_socket, &QTcpSocket::disconnected, this, &NetworkManager::onDisconnected);
     connect(m_socket, &QTcpSocket::readyRead, this, &NetworkManager::onReadyRead);
     connect(m_socket, &QAbstractSocket::errorOccurred, this, &NetworkManager::onError);
-#endif
 }
 
 NetworkManager::~NetworkManager() {}
 
-void NetworkManager::connectToServer(const QString& host, quint16 port)
+void NetworkManager::connectToServer(const QString &host, quint16 port)
 {
-#ifdef USE_FAKE_SERVER
-    Q_UNUSED(host);
-    Q_UNUSED(port);
-    qInfo() << "[FAKE SERVER] 跳过真实服务器连接";
-    QTimer::singleShot(0, this, [this]() {
-        emit connected();
-    });
-#else
+    m_lastHost = host;
+    m_lastPort = port;
     qInfo() << "连接到服务器" << host << ":" << port;
     m_socket->connectToHost(host, port);
-#endif
 }
 
 // 当收到服务器数据时 (JSON解析)
-#ifndef USE_FAKE_SERVER
 void NetworkManager::onReadyRead()
 {
-    QByteArray data = m_socket->readAll();
-    qDebug() << "收到服务器响应:" << data;
+    m_receiveBuffer.append(m_socket->readAll());
+    processLengthPrefixedBuffer();
+}
 
-    QJsonDocument jsonDoc = QJsonDocument::fromJson(data);
-    if (jsonDoc.isNull() || !jsonDoc.isObject()) {
-        qWarning() << "收到无效的JSON响应 (非JSON)";
-        emit generalError("收到无效的服务器响应 (非JSON)");
-        return;
+void NetworkManager::processLengthPrefixedBuffer()
+{
+    const int headerSize = static_cast<int>(sizeof(quint32));
+    const quint32 maxFrameSize = 4u * 1024u * 1024u;
+
+    while (true)
+    {
+        if (m_receiveBuffer.size() < headerSize)
+        {
+            return;
+        }
+
+        quint32 frameLength = qFromBigEndian<quint32>(
+            reinterpret_cast<const uchar *>(m_receiveBuffer.constData()));
+
+        if (frameLength == 0 || frameLength > maxFrameSize)
+        {
+            qWarning() << "收到异常的帧长度:" << frameLength;
+            emit generalError("收到异常的服务器响应 (帧长度)");
+            m_receiveBuffer.clear();
+            return;
+        }
+
+        const int totalNeeded = headerSize + static_cast<int>(frameLength);
+        if (m_receiveBuffer.size() < totalNeeded)
+        {
+            return;
+        }
+
+        QByteArray payload = m_receiveBuffer.mid(headerSize, frameLength);
+        m_receiveBuffer.remove(0, totalNeeded);
+
+        qDebug() << "收到服务器响应:" << payload;
+
+        QJsonDocument jsonDoc = QJsonDocument::fromJson(payload);
+        if (jsonDoc.isNull() || !jsonDoc.isObject())
+        {
+            qWarning() << "收到无效的JSON响应 (非JSON)";
+            emit generalError("收到无效的服务器响应 (非JSON)");
+            continue;
+        }
+
+        handleResponseObject(jsonDoc.object());
     }
+}
 
-    QJsonObject response = jsonDoc.object();
-    QString status = response["status"].toString();
-    QString message = response["message"].toString();
+void NetworkManager::handleResponseObject(const QJsonObject &response)
+{
+    QString status = response.value("status").toString();
+    QString message = response.value("message").toString();
 
-    // 检查是否是tag注册响应（没有action_response字段）
-    if (response.contains("tag") || (status == "success" && message == "Tag registered")) {
-        if (status == "success") {
+    if (response.contains("tag") || (status == "success" && message == "Tag registered"))
+    {
+        if (status == "success")
+        {
             m_tagRegistered = true;
             qInfo() << "Tag注册成功";
             emit tagRegistered();
-        } else {
+        }
+        else
+        {
             qWarning() << "Tag注册失败:" << message;
             emit tagRegistrationFailed(message);
         }
         return;
     }
 
-    QString action = response["action_response"].toString();
-
-    if (!action.isEmpty() && !m_pendingActions.isEmpty() && m_pendingActions.head() == action) {
-        // 丢弃已匹配的动作，保持队列与响应同步
-        m_pendingActions.dequeue();
+    QString action = response.value("action_response").toString();
+    if (action.isEmpty() && response.contains("action"))
+    {
+        action = response.value("action").toString();
     }
 
-    if (action.isEmpty()) {
-        if (response.contains("action")) {
-            action = response["action"].toString();
+    QJsonObject requestPayload = detachPendingPayload(action);
+
+    if (action.isEmpty())
+    {
+        qWarning() << "无法确定响应对应的 action，丢弃该响应";
+        if (status == "error" && !message.isEmpty())
+        {
+            const QString suppressed = QStringLiteral("Invalid JSON format");
+            if (message.compare(suppressed, Qt::CaseInsensitive) != 0)
+            {
+                emit generalError(message);
+            }
         }
-        // 如果服务器没有返回action字段，则退回到本地记录的请求顺序
-        if (action.isEmpty() && !m_pendingActions.isEmpty()) {
-            action = m_pendingActions.dequeue();
-        }
+        return;
     }
 
-    // 路由 "失败" 响应
-    if (status == "error") {
+    if (status == "error")
+    {
         qWarning() << "服务器返回错误:" << message << " (Action: " << action << ")";
-
-        if (action == "login") {
-            emit loginFailed(message);
-        }
-        else if (action == "search_flights") {
-            emit generalError(message);
-        }
-        else if (action == "register") {
-            emit registerFailed(message);
-        }
-        else if (action == "book_flight") {
-            emit bookingFailed(message);
-        }
-        else if (action == "get_my_orders") {
-            emit generalError(message);
-        }
-        else if (action == "cancel_order") {
-            emit cancelOrderFailed(message);
-        }
-        else if (action == "update_profile") {
-            emit profileUpdateFailed(message);
-        }
-        else if (action == "add_favorite") {
-            emit addFavoriteFailed(message);
-        }
-        else if (action == "remove_favorite") {
-            emit removeFavoriteFailed(message);
-        }
-        else if (action == "get_my_favorites") {
-            emit generalError(message);
-        }
-        else {
-            emit generalError(message);
-        }
+        emitActionFailed(action, message);
         return;
     }
 
-    // 路由 "成功" 响应
-    // action字段一定不能为空！
-    if (action.isEmpty()) {
-        return;
+    if (action == "login")
+    {
+        emit loginSuccess(response.value("data").toObject());
     }
-
-    // 开始路由
-    if (action == "login") {
-        emit loginSuccess(response["data"].toObject());
+    else if (action == "search_flights")
+    {
+        emit searchResults(response.value("data").toArray());
     }
-    else if (action == "search_flights") {
-        emit searchResults(response["data"].toArray());
-    }
-    else if (action == "register") {
+    else if (action == "register")
+    {
         emit registerSuccess(message);
     }
-    else if (action == "book_flight") {
-        emit bookingSuccess(response["data"].toObject());
+    else if (action == "book_flight")
+    {
+        emit bookingSuccess(response.value("data").toObject());
     }
-    else if (action == "get_my_orders") {
-        emit myOrdersResult(response["data"].toArray());
+    else if (action == "get_my_orders")
+    {
+        emit myOrdersResult(response.value("data").toArray());
     }
-    else if (action == "cancel_order") {
+    else if (action == "cancel_order")
+    {
         emit cancelOrderSuccess(message);
     }
-    else if (action == "update_profile") {
-        emit profileUpdateSuccess(message, response["data"].toObject());
+    else if (action == "update_profile")
+    {
+        QJsonObject userData = response.value("data").toObject();
+        if (userData.isEmpty())
+        {
+            userData = requestPayload;
+            userData.remove("password");
+            if (!userData.contains("user_id") || userData.value("user_id").toInt() <= 0)
+            {
+                userData["user_id"] = AppSession::instance().userId();
+            }
+            if (!userData.contains("username") || userData.value("username").toString().isEmpty())
+            {
+                userData["username"] = AppSession::instance().username();
+            }
+            userData["is_admin"] = AppSession::instance().isAdmin() ? 1 : 0;
+        }
+        emit profileUpdateSuccess(message, userData);
     }
-    else if (action == "add_favorite") {
-        emit addFavoriteSuccess(message);
-    }
-    else if (action == "remove_favorite") {
-        emit removeFavoriteSuccess(message);
-    }
-    else if (action == "get_my_favorites") {
-        emit myFavoritesResult(response["data"].toArray());
-    }
-    /*
-    else if (action == "admin_add_flight") {
-        emit adminOpSuccess(message);
-    }
-    */
-    else {
-        // 收到一个服务器认识、但客户端不认识的 action
-        qWarning() << "收到未知的成功响应 action: " << action;
+    else
+    {
+        qWarning() << "收到未知的成功响应 action:" << action;
     }
 }
-#else
-void NetworkManager::onReadyRead() {}
-#endif
 
-void NetworkManager::onConnected() {
+void NetworkManager::reconnectToLastEndpoint()
+{
+    if (m_lastHost.isEmpty())
+    {
+        m_reconnectPending = false;
+        return;
+    }
+
+    QTimer::singleShot(200, this, [this]()
+                       {
+        qInfo() << "重新连接服务器" << m_lastHost << ":" << m_lastPort;
+        if (!m_socket) {
+            m_reconnectPending = false;
+            return;
+        }
+        m_reconnectPending = false;
+        m_socket->connectToHost(m_lastHost, m_lastPort); });
+}
+
+void NetworkManager::onConnected()
+{
     qInfo() << "已连接到服务器!";
     emit connected();
-    
-#ifndef USE_FAKE_SERVER
-    // 连接成功后自动发送tag注册（仅在真实服务器模式下）
+    m_receiveBuffer.clear();
+    m_pendingRequests.clear();
+
+    // 连接成功后自动发送tag注册
     QString tag = generateUniqueTag();
     m_clientTag = tag;
     sendTagRegistration(tag);
-#else
-    // 假服务器模式下直接标记tag已注册
-    m_tagRegistered = true;
-    emit tagRegistered();
-#endif
 }
-void NetworkManager::onDisconnected() {
+void NetworkManager::onDisconnected()
+{
     qWarning() << "与服务器断开连接";
     m_tagRegistered = false; // 重置tag注册状态
+    m_pendingRequests.clear();
+    m_receiveBuffer.clear();
+    m_clientTag.clear();
     emit disconnected();
+
+    if (m_reconnectPending)
+    {
+        reconnectToLastEndpoint();
+    }
 }
-void NetworkManager::onError(QAbstractSocket::SocketError socketError) {
+void NetworkManager::onError(QAbstractSocket::SocketError socketError)
+{
     // 这个 onError 主要处理底层的TCP错误 (比如连不上服务器)
     qCritical() << "网络底层错误:" << m_socket->errorString();
     emit generalError(m_socket->errorString());
 }
 
 // Tag注册功能实现
-void NetworkManager::sendTagRegistration(const QString& tag)
+void NetworkManager::sendTagRegistration(const QString &tag)
 {
-#ifdef USE_FAKE_SERVER
-    Q_UNUSED(tag);
-    // 模拟tag注册成功
-    QTimer::singleShot(100, this, [this]() {
-        m_tagRegistered = true;
-        emit tagRegistered();
-    });
-    return;
-#else
-    if (m_socket->state() != QAbstractSocket::ConnectedState) {
+    if (m_socket->state() != QAbstractSocket::ConnectedState)
+    {
         qWarning() << "未连接到服务器，无法注册tag";
         emit tagRegistrationFailed("未连接到服务器");
         return;
@@ -223,9 +247,8 @@ void NetworkManager::sendTagRegistration(const QString& tag)
     request["tag"] = tag;
 
     QJsonDocument doc(request);
-    m_socket->write(doc.toJson());
+    writeFramedJson(doc);
     qDebug() << "发送tag注册请求:" << tag;
-#endif
 }
 
 bool NetworkManager::isTagRegistered() const
@@ -242,46 +265,119 @@ QString NetworkManager::generateUniqueTag() const
 }
 
 // 发送JSON的通用函数
-void NetworkManager::sendJsonRequest(const QJsonObject& request)
+void NetworkManager::sendJsonRequest(const QJsonObject &request)
 {
-#ifdef USE_FAKE_SERVER
-    qWarning() << "[FAKE SERVER] sendJsonRequest 被调用，但当前为本地模拟模式";
-    return;
-#else
-    if (m_socket->state() != QAbstractSocket::ConnectedState) {
-        qWarning() << "未连接到服务器，无法发送消息";
-        emit generalError("未连接到服务器");
-        return;
-    }
-
-    if (!m_tagRegistered) {
-        qWarning() << "Tag未注册，无法发送业务请求";
-        emit generalError("Tag未注册，请先完成tag注册");
-        return;
-    }
-
     QString actionName = request.value("action").toString();
 
+    if (m_socket->state() != QAbstractSocket::ConnectedState)
+    {
+        qWarning() << "未连接到服务器，无法发送消息";
+        emitActionFailed(actionName, "未连接到服务器");
+        return;
+    }
+
+    if (!m_tagRegistered)
+    {
+        qWarning() << "Tag未注册，无法发送业务请求";
+        emitActionFailed(actionName, "Tag未注册，请先完成tag注册");
+        return;
+    }
+
     QJsonDocument doc(request);
-    m_socket->write(doc.toJson());
+    writeFramedJson(doc);
     qDebug() << "发送JSON请求:" << request;
 
-    if (!actionName.isEmpty()) {
-        m_pendingActions.enqueue(actionName);
+    if (!actionName.isEmpty())
+    {
+        PendingRequest pending{actionName, request.value("data").toObject()};
+        m_pendingRequests.enqueue(pending);
     }
-#endif
 }
 
+void NetworkManager::writeFramedJson(const QJsonDocument &document)
+{
+    QByteArray payload = document.toJson(QJsonDocument::Compact);
+
+    quint32 length = static_cast<quint32>(payload.size());
+
+    QByteArray frame;
+    frame.resize(sizeof(quint32));
+    qToBigEndian(length, reinterpret_cast<uchar *>(frame.data()));
+    frame.append(payload);
+
+    m_socket->write(frame);
+}
+
+void NetworkManager::emitActionFailed(const QString &action, const QString &message)
+{
+    if (action == "login")
+    {
+        emit loginFailed(message);
+    }
+    else if (action == "search_flights")
+    {
+        emit searchFailed(message);
+    }
+    else if (action == "register")
+    {
+        emit registerFailed(message);
+    }
+    else if (action == "book_flight")
+    {
+        emit bookingFailed(message);
+    }
+    else if (action == "get_my_orders")
+    {
+        emit myOrdersFailed(message);
+    }
+    else if (action == "cancel_order")
+    {
+        emit cancelOrderFailed(message);
+    }
+    else if (action == "update_profile")
+    {
+        emit profileUpdateFailed(message);
+    }
+    else if (!action.isEmpty())
+    {
+        emit generalError(message);
+    }
+    else
+    {
+        emit generalError(message);
+    }
+}
+
+QJsonObject NetworkManager::detachPendingPayload(QString &action)
+{
+    QJsonObject payload;
+    QQueue<PendingRequest> updated;
+    bool removed = false;
+
+    while (!m_pendingRequests.isEmpty())
+    {
+        PendingRequest current = m_pendingRequests.dequeue();
+        if (!removed && (action.isEmpty() || current.action == action))
+        {
+            if (action.isEmpty())
+            {
+                action = current.action;
+            }
+            payload = current.payload;
+            removed = true;
+            continue;
+        }
+        updated.enqueue(current);
+    }
+
+    m_pendingRequests = updated;
+    return payload;
+}
 
 // 构建各种请求 (给UI调用)
 
-void NetworkManager::sendLoginRequest(const QString& username, const QString& password)
+void NetworkManager::sendLoginRequest(const QString &username, const QString &password)
 {
-#ifdef USE_FAKE_SERVER
-    Q_UNUSED(password);
-    emitFakeLoginResponse(username);
-    return;
-#endif
     QJsonObject data;
     data["username"] = username;
     data["password"] = password;
@@ -295,11 +391,6 @@ void NetworkManager::sendLoginRequest(const QString& username, const QString& pa
 
 void NetworkManager::updateProfileRequest(int userId, const QString &username, const QString &password)
 {
-#ifdef USE_FAKE_SERVER
-    emitFakeProfileUpdateResponse(userId, username);
-    Q_UNUSED(password);
-    return;
-#endif
     QJsonObject data;
     data["user_id"] = userId;
     data["username"] = username;
@@ -312,20 +403,21 @@ void NetworkManager::updateProfileRequest(int userId, const QString &username, c
     sendJsonRequest(request);
 }
 
-void NetworkManager::sendSearchRequest(const QString& origin, const QString& dest, const QString& date,
-                                       const QString& cabinClass,
-                                       const QStringList& passengerTypes)
+void NetworkManager::sendSearchRequest(const QString &origin, const QString &dest, const QString &date,
+                                       const QString &cabinClass,
+                                       const QStringList &passengerTypes)
 {
-#ifdef USE_FAKE_SERVER
-    emitFakeSearchResults(origin, dest, date);
-    return;
-#endif
     QJsonObject data;
-    if (!origin.isEmpty()) data["origin"] = origin;
-    if (!dest.isEmpty()) data["destination"] = dest;
-    if (!date.isEmpty()) data["date"] = date;
-    if (!cabinClass.isEmpty()) data["cabin_class"] = cabinClass;
-    if (!passengerTypes.isEmpty()) {
+    if (!origin.isEmpty())
+        data["origin"] = origin;
+    if (!dest.isEmpty())
+        data["destination"] = dest;
+    if (!date.isEmpty())
+        data["date"] = date;
+    if (!cabinClass.isEmpty())
+        data["cabin_class"] = cabinClass;
+    if (!passengerTypes.isEmpty())
+    {
         data["passenger_types"] = QJsonArray::fromStringList(passengerTypes);
     }
 
@@ -336,13 +428,8 @@ void NetworkManager::sendSearchRequest(const QString& origin, const QString& des
     sendJsonRequest(request);
 }
 
-void NetworkManager::sendRegisterRequest(const QString& username, const QString& password)
+void NetworkManager::sendRegisterRequest(const QString &username, const QString &password)
 {
-#ifdef USE_FAKE_SERVER
-    Q_UNUSED(password);
-    emitFakeRegisterResponse(username);
-    return;
-#endif
     QJsonObject data;
     data["username"] = username;
     data["password"] = password;
@@ -356,10 +443,6 @@ void NetworkManager::sendRegisterRequest(const QString& username, const QString&
 
 void NetworkManager::bookFlightRequest(int userId, int flightId)
 {
-#ifdef USE_FAKE_SERVER
-    emitFakeBookingResponse(userId, flightId);
-    return;
-#endif
     QJsonObject data;
     data["user_id"] = userId;
     data["flight_id"] = flightId;
@@ -373,10 +456,6 @@ void NetworkManager::bookFlightRequest(int userId, int flightId)
 
 void NetworkManager::getMyOrdersRequest(int userId)
 {
-#ifdef USE_FAKE_SERVER
-    emitFakeOrdersResponse(userId);
-    return;
-#endif
     QJsonObject data;
     data["user_id"] = userId;
 
@@ -389,10 +468,6 @@ void NetworkManager::getMyOrdersRequest(int userId)
 
 void NetworkManager::cancelOrderRequest(int bookingId)
 {
-#ifdef USE_FAKE_SERVER
-    emitFakeCancelResponse(bookingId);
-    return;
-#endif
     QJsonObject data;
     data["booking_id"] = bookingId;
 
@@ -402,220 +477,3 @@ void NetworkManager::cancelOrderRequest(int bookingId)
 
     sendJsonRequest(request);
 }
-
-void NetworkManager::addFavoriteRequest(int userId, int flightId)
-{
-#ifdef USE_FAKE_SERVER
-    emitFakeAddFavoriteResponse(userId, flightId);
-    return;
-#endif
-    QJsonObject data;
-    data["user_id"] = userId;
-    data["flight_id"] = flightId;
-
-    QJsonObject request;
-    request["action"] = "add_favorite";
-    request["data"] = data;
-
-    sendJsonRequest(request);
-}
-
-void NetworkManager::removeFavoriteRequest(int userId, int flightId)
-{
-#ifdef USE_FAKE_SERVER
-    emitFakeRemoveFavoriteResponse(userId, flightId);
-    return;
-#endif
-    QJsonObject data;
-    data["user_id"] = userId;
-    data["flight_id"] = flightId;
-
-    QJsonObject request;
-    request["action"] = "remove_favorite";
-    request["data"] = data;
-
-    sendJsonRequest(request);
-}
-
-void NetworkManager::getMyFavoritesRequest(int userId)
-{
-#ifdef USE_FAKE_SERVER
-    emitFakeFavoritesResponse(userId);
-    return;
-#endif
-    QJsonObject data;
-    data["user_id"] = userId;
-
-    QJsonObject request;
-    request["action"] = "get_my_favorites";
-    request["data"] = data;
-
-    sendJsonRequest(request);
-}
-
-#ifdef USE_FAKE_SERVER
-void NetworkManager::emitFakeLoginResponse(const QString& username)
-{
-    QJsonObject user;
-    user["user_id"] = 1;
-    user["username"] = username.isEmpty() ? QStringLiteral("demo_user") : username;
-    user["is_admin"] = 0;
-
-    QTimer::singleShot(100, this, [this, user]() {
-        emit loginSuccess(user);
-    });
-}
-
-void NetworkManager::emitFakeSearchResults(const QString& origin, const QString& dest, const QString& date)
-{
-    QJsonArray flights;
-
-    QJsonObject flight1;
-    flight1["flight_id"] = 101;
-    flight1["flight_number"] = QStringLiteral("CA101");
-    flight1["origin"] = origin.isEmpty() ? QStringLiteral("北京") : origin;
-    flight1["destination"] = dest.isEmpty() ? QStringLiteral("上海") : dest;
-    flight1["departure_time"] = date.isEmpty() ? QStringLiteral("2025-12-01T08:00:00") : date + "T08:00:00";
-    flight1["arrival_time"] = QStringLiteral("2025-12-01T10:15:00");
-    flight1["price"] = 850;
-    flight1["remaining_seats"] = 23;
-
-    QJsonObject flight2 = flight1;
-    flight2["flight_id"] = 102;
-    flight2["flight_number"] = QStringLiteral("MU233");
-    flight2["departure_time"] = date.isEmpty() ? QStringLiteral("2025-12-01T14:30:00") : date + "T14:30:00";
-    flight2["arrival_time"] = QStringLiteral("2025-12-01T17:05:00");
-    flight2["price"] = 920;
-    flight2["remaining_seats"] = 12;
-
-    flights.append(flight1);
-    flights.append(flight2);
-
-    QTimer::singleShot(150, this, [this, flights]() {
-        emit searchResults(flights);
-    });
-}
-
-void NetworkManager::emitFakeRegisterResponse(const QString& username)
-{
-    QString message = QStringLiteral("注册成功 (本地模拟) : %1")
-                          .arg(username.isEmpty() ? QStringLiteral("demo_user") : username);
-    QTimer::singleShot(120, this, [this, message]() {
-        emit registerSuccess(message);
-    });
-}
-
-void NetworkManager::emitFakeBookingResponse(int userId, int flightId)
-{
-    QJsonObject booking;
-    booking["booking_id"] = 500 + flightId;
-    booking["user_id"] = userId;
-    booking["flight_id"] = flightId;
-    booking["status"] = QStringLiteral("confirmed");
-
-    QTimer::singleShot(150, this, [this, booking]() {
-        emit bookingSuccess(booking);
-    });
-}
-
-void NetworkManager::emitFakeOrdersResponse(int userId)
-{
-    QJsonArray orders;
-
-    QJsonObject order1;
-    order1["booking_id"] = 700;
-    order1["flight_id"] = 101;
-    order1["status"] = QStringLiteral("confirmed");
-    order1["flight_number"] = QStringLiteral("CA101");
-    order1["origin"] = QStringLiteral("北京");
-    order1["destination"] = QStringLiteral("上海");
-    order1["departure_time"] = QStringLiteral("2025-12-01T08:00:00");
-    order1["user_id"] = userId;
-
-    QJsonObject order2 = order1;
-    order2["booking_id"] = 701;
-    order2["flight_id"] = 105;
-    order2["destination"] = QStringLiteral("深圳");
-    order2["departure_time"] = QStringLiteral("2025-12-05T19:20:00");
-
-    orders.append(order1);
-    orders.append(order2);
-
-    QTimer::singleShot(150, this, [this, orders]() {
-        emit myOrdersResult(orders);
-    });
-}
-
-void NetworkManager::emitFakeCancelResponse(int bookingId)
-{
-    QString message = QStringLiteral("订单 %1 已取消 (本地模拟)").arg(bookingId);
-    QTimer::singleShot(100, this, [this, message]() {
-        emit cancelOrderSuccess(message);
-    });
-}
-
-void NetworkManager::emitFakeProfileUpdateResponse(int userId, const QString &username)
-{
-    QJsonObject user;
-    user["user_id"] = userId <= 0 ? 1 : userId;
-    user["username"] = username.isEmpty() ? QStringLiteral("demo_user") : username;
-    user["is_admin"] = 0;
-
-    QString message = QStringLiteral("个人信息已更新 (本地模拟)");
-    QTimer::singleShot(120, this, [this, message, user]() {
-        emit profileUpdateSuccess(message, user);
-    });
-}
-
-void NetworkManager::emitFakeAddFavoriteResponse(int userId, int flightId)
-{
-    QString message = QStringLiteral("航班 %1 已添加到收藏 (本地模拟)").arg(flightId);
-    QTimer::singleShot(100, this, [this, message]() {
-        emit addFavoriteSuccess(message);
-    });
-}
-
-void NetworkManager::emitFakeRemoveFavoriteResponse(int userId, int flightId)
-{
-    QString message = QStringLiteral("航班 %1 已从收藏中移除 (本地模拟)").arg(flightId);
-    QTimer::singleShot(100, this, [this, message]() {
-        emit removeFavoriteSuccess(message);
-    });
-}
-
-void NetworkManager::emitFakeFavoritesResponse(int userId)
-{
-    QJsonArray favorites;
-
-    QJsonObject favorite1;
-    favorite1["favorite_id"] = 1;
-    favorite1["user_id"] = userId;
-    favorite1["flight_id"] = 101;
-    favorite1["flight_number"] = QStringLiteral("CA101");
-    favorite1["origin"] = QStringLiteral("北京");
-    favorite1["destination"] = QStringLiteral("上海");
-    favorite1["departure_time"] = QStringLiteral("2025-12-01T08:00:00");
-    favorite1["arrival_time"] = QStringLiteral("2025-12-01T10:15:00");
-    favorite1["price"] = 850;
-    favorite1["created_at"] = QStringLiteral("2025-11-20T10:30:00");
-
-    QJsonObject favorite2;
-    favorite2["favorite_id"] = 2;
-    favorite2["user_id"] = userId;
-    favorite2["flight_id"] = 105;
-    favorite2["flight_number"] = QStringLiteral("MU240");
-    favorite2["origin"] = QStringLiteral("上海");
-    favorite2["destination"] = QStringLiteral("广州");
-    favorite2["departure_time"] = QStringLiteral("2025-12-05T14:30:00");
-    favorite2["arrival_time"] = QStringLiteral("2025-12-05T17:00:00");
-    favorite2["price"] = 760;
-    favorite2["created_at"] = QStringLiteral("2025-11-22T15:45:00");
-
-    favorites.append(favorite1);
-    favorites.append(favorite2);
-
-    QTimer::singleShot(150, this, [this, favorites]() {
-        emit myFavoritesResult(favorites);
-    });
-}
-#endif // USE_FAKE_SERVER

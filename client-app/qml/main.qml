@@ -2,6 +2,9 @@ import QtQuick 2.15
 import QtQuick.Window 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import "qrc:/qml/pages"
+import "qrc:/qml/dialogs"
+import "qrc:/qml/components"
 
 ApplicationWindow {
     id: mainWindow
@@ -54,9 +57,6 @@ ApplicationWindow {
                 onRequestOrders: {
                     stackView.push(ordersPage)
                 }
-                onRequestFavorites: {
-                    stackView.push(favoritesPage)
-                }
                 onRequestProfile: {
                     stackView.push(profilePage)
                 }
@@ -71,17 +71,6 @@ ApplicationWindow {
         Component {
             id: ordersPage
             OrdersWindow {
-                bridge: mainWindow.bridge
-                onBackToSearch: {
-                    stackView.pop()
-                }
-            }
-        }
-        
-        // 收藏页面
-        Component {
-            id: favoritesPage
-            FavoritesWindow {
                 bridge: mainWindow.bridge
                 onBackToSearch: {
                     stackView.pop()

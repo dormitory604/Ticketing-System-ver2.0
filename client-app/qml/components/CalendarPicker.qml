@@ -178,14 +178,14 @@ Popup {
             
             // 日期单元格（固定6行以确保对称，即使月份只有30天或31天）
             Repeater {
-                model: Math.max(42 - getFirstDayOfMonth(), getDaysInMonth()) // 最多6行x7列=42个单元格
+                model: 42 // 固定 6 行 x 7 列，后续通过 visible 控制
                 delegate: Rectangle {
                     width: (dateGrid.width - dateGrid.columnSpacing * 6) / 7
                     height: 52
-                    visible: index < (getFirstDayOfMonth() + getDaysInMonth())
+                    visible: index < getDaysInMonth()
                     enabled: visible
                     
-                    property int dayNumber: index - getFirstDayOfMonth() + 1
+                    property int dayNumber: index + 1
                     color: {
                         if (!visible) return "transparent"
                         var dateStr = formatDate(dayNumber)

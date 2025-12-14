@@ -21,7 +21,7 @@ import csv
 import random
 import sqlite3
 from dataclasses import dataclass
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 from typing import Dict, Iterable, List, Sequence
 
@@ -53,6 +53,49 @@ SEAT_RULES: Sequence[tuple[str, int]] = (
 )
 
 DEFAULT_SEATS = 170
+PRICE_NOISE_STD_RATIO = 0.2  # larger std-dev so fares wiggle more
+PRICE_NOISE_CLAMP_RATIO = 0.5  # allow up to +/-50% swing around baseline
+PRICE_NOISE_MIN_ABS = 35.0  # guarantee noticeable bumps even on short legs
+DEFAULT_DEMO_USERS = 25
+DEFAULT_BOOKING_COUNT = 100
+
+FLIGHT_SCHEMA = """
+CREATE TABLE IF NOT EXISTS Flight (
+    flight_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    flight_number TEXT NOT NULL,
+    model TEXT,
+    origin TEXT NOT NULL,
+    destination TEXT NOT NULL,
+    departure_time DATETIME NOT NULL,
+    arrival_time DATETIME NOT NULL,
+    total_seats INTEGER NOT NULL,
+    remaining_seats INTEGER NOT NULL,
+    price REAL NOT NULL,
+    is_deleted INTEGER NOT NULL DEFAULT 0
+);
+"""
+
+USER_SCHEMA = """
+CREATE TABLE IF NOT EXISTS User (
+    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL,
+    is_admin INTEGER NOT NULL DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+"""
+
+BOOKING_SCHEMA = """
+CREATE TABLE IF NOT EXISTS Booking (
+    booking_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    flight_id INTEGER NOT NULL,
+    booking_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    status TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES User (user_id),
+    FOREIGN KEY (flight_id) REFERENCES Flight (flight_id)
+);
+"""
 
 
 @dataclass
@@ -66,6 +109,7 @@ class FlightRecord:
     total_seats: int
     remaining_seats: int
     price: int
+    is_deleted: int = 0
 
     def as_tuple(self) -> tuple:
         return (
@@ -78,6 +122,7 @@ class FlightRecord:
             self.total_seats,
             self.remaining_seats,
             self.price,
+            self.is_deleted,
         )
 
 
@@ -112,7 +157,14 @@ def estimate_price(distance_km: float) -> int:
     base = 120.0
     per_km = 0.82 if distance_km > 1500 else 0.95
     price = base + distance_km * per_km
-    return int(round(max(price, 200.0)))
+
+    # Add controlled Gaussian noise so prices don't look perfectly linear.
+    sigma = max(price * PRICE_NOISE_STD_RATIO, PRICE_NOISE_MIN_ABS)
+    noisy_price = random.gauss(price, sigma)
+    lower_bound = max(200.0, price * (1 - PRICE_NOISE_CLAMP_RATIO))
+    upper_bound = price * (1 + PRICE_NOISE_CLAMP_RATIO)
+    bounded_price = min(max(noisy_price, lower_bound), upper_bound)
+    return int(round(bounded_price))
 
 
 def estimate_seats(model: str) -> int:
@@ -160,7 +212,6 @@ def expand_row_to_flights(
         return []
 
     distance = parse_distance_km(row.get("里程（公里）", ""))
-    price = estimate_price(distance)
     seats = estimate_seats(model)
 
     records: List[FlightRecord] = []
@@ -174,6 +225,7 @@ def expand_row_to_flights(
             arrival_dt += timedelta(days=1)
 
         remaining = random.randint(0, seats)
+        price = estimate_price(distance)
 
         record = FlightRecord(
             flight_number=flight_number,
@@ -197,6 +249,72 @@ def load_csv_rows(csv_path: Path) -> List[Dict[str, str]]:
         return [row for row in reader]
 
 
+def ensure_is_deleted_column(conn: sqlite3.Connection) -> None:
+    exists = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='Flight';"
+    ).fetchone()
+    if not exists:
+        return
+
+    columns = conn.execute("PRAGMA table_info(Flight);").fetchall()
+    if not any(col[1] == "is_deleted" for col in columns):
+        conn.execute("ALTER TABLE Flight ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0;")
+
+
+def ensure_core_tables(conn: sqlite3.Connection) -> None:
+    conn.execute(USER_SCHEMA)
+    conn.execute(FLIGHT_SCHEMA)
+    conn.execute(BOOKING_SCHEMA)
+    ensure_is_deleted_column(conn)
+
+
+def ensure_demo_users(conn: sqlite3.Connection, target_count: int = DEFAULT_DEMO_USERS) -> List[int]:
+    rows = conn.execute("SELECT user_id FROM User ORDER BY user_id;").fetchall()
+    existing_count = len(rows)
+    to_create = max(0, target_count - existing_count)
+    if to_create:
+        payload = []
+        for idx in range(existing_count + 1, existing_count + to_create + 1):
+            username = f"demo_user_{idx:03d}"
+            password = f"demo_pass_{random.randint(1000, 9999)}"
+            payload.append((username, password, 0))
+        conn.executemany(
+            "INSERT OR IGNORE INTO User (username, password, is_admin) VALUES (?, ?, ?)",
+            payload,
+        )
+        rows = conn.execute("SELECT user_id FROM User ORDER BY user_id;").fetchall()
+    return [row[0] for row in rows]
+
+
+def seed_bookings(
+    conn: sqlite3.Connection,
+    flight_ids: Sequence[int],
+    user_ids: Sequence[int],
+    count: int = DEFAULT_BOOKING_COUNT,
+) -> None:
+    if count <= 0 or not flight_ids or not user_ids:
+        return
+
+    statuses = ["CONFIRMED", "CANCELLED", "PENDING"]
+    weights = [0.7, 0.15, 0.15]
+    bookings: List[tuple[int, int, str, str]] = []
+    for _ in range(count):
+        user_id = random.choice(user_ids)
+        flight_id = random.choice(flight_ids)
+        days_ago = random.randint(0, 60)
+        minutes_offset = random.randint(0, 23 * 60)
+        booking_time = (
+            datetime.now(timezone.utc) - timedelta(days=days_ago, minutes=minutes_offset)
+        ).strftime("%Y-%m-%d %H:%M:%S")
+        status = random.choices(statuses, weights=weights, k=1)[0]
+        bookings.append((user_id, flight_id, booking_time, status))
+
+    conn.executemany(
+        "INSERT INTO Booking (user_id, flight_id, booking_time, status) VALUES (?, ?, ?, ?)",
+        bookings,
+    )
+
+
 def insert_flights(db_path: Path, flights: Sequence[FlightRecord]) -> None:
     if not flights:
         print("No flights to insert; aborting.")
@@ -205,6 +323,7 @@ def insert_flights(db_path: Path, flights: Sequence[FlightRecord]) -> None:
     conn = sqlite3.connect(db_path)
     try:
         conn.execute("PRAGMA foreign_keys = ON;")
+        ensure_core_tables(conn)
         with conn:
             conn.execute("DELETE FROM Booking;")
             conn.execute("DELETE FROM Flight;")
@@ -213,11 +332,16 @@ def insert_flights(db_path: Path, flights: Sequence[FlightRecord]) -> None:
                 INSERT INTO Flight (
                     flight_number, model, origin, destination,
                     departure_time, arrival_time,
-                    total_seats, remaining_seats, price
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    total_seats, remaining_seats, price, is_deleted
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 [record.as_tuple() for record in flights],
             )
+
+            user_ids = ensure_demo_users(conn)
+            flight_rows = conn.execute("SELECT flight_id FROM Flight;").fetchall()
+            flight_ids = [row[0] for row in flight_rows]
+            seed_bookings(conn, flight_ids, user_ids)
     finally:
         conn.close()
 

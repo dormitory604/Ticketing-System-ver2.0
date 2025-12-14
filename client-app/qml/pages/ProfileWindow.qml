@@ -32,7 +32,8 @@ Rectangle {
                     }
                     contentItem: Text {
                         text: parent.text
-                        font.pixelSize: 14
+                        font.pixelSize: 18
+                        font.bold: true
                         color: "white"
                     }
                 }

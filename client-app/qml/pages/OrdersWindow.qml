@@ -3,7 +3,7 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 
 Rectangle {
-    id: favoritesWindow
+    id: ordersWindow
     color: "#f5f5f5"
     
     property var bridge
@@ -13,6 +13,7 @@ Rectangle {
         anchors.fill: parent
         spacing: 0
         
+        // 顶部栏
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 60
@@ -25,20 +26,21 @@ Rectangle {
                 
                 Button {
                     text: "← 返回"
-                    onClicked: favoritesWindow.backToSearch()
+                    onClicked: ordersWindow.backToSearch()
                     background: Rectangle {
                         color: parent.pressed ? "#1976D2" : "transparent"
                         radius: 4
                     }
                     contentItem: Text {
                         text: parent.text
-                        font.pixelSize: 14
+                        font.pixelSize: 18
+                        font.bold: true
                         color: "white"
                     }
                 }
                 
                 Text {
-                    text: "我的收藏"
+                    text: "我的订单"
                     font.pixelSize: 24
                     font.bold: true
                     color: "white"
@@ -48,14 +50,15 @@ Rectangle {
                 
                 Button {
                     text: "刷新"
-                    onClicked: bridge.getMyFavorites()
+                    onClicked: bridge.getMyOrders()
                     background: Rectangle {
                         color: parent.pressed ? "#1976D2" : "transparent"
                         radius: 4
                     }
                     contentItem: Text {
                         text: parent.text
-                        font.pixelSize: 14
+                        font.pixelSize: 18
+                        font.bold: true
                         color: "white"
                     }
                 }
@@ -64,22 +67,23 @@ Rectangle {
         
         ScrollView {
             Layout.fillWidth: true
+            Layout.topMargin: 20
             Layout.fillHeight: true
             
             ListView {
-                id: favoritesListView
-                model: bridge ? bridge.myFavorites : []
+                id: ordersListView
+                model: bridge ? bridge.myOrders : []
                 spacing: 10
                 delegate: Rectangle {
-                    width: favoritesListView.width - 20
-                    height: 120
+                    width: ordersListView.width - 20
+                    height: 100
                     anchors.horizontalCenter: parent.horizontalCenter
                     color: "white"
                     border.color: "#e0e0e0"
                     border.width: 1
                     radius: 4
                     
-                    property var favoriteData: modelData || {}
+                    property var orderData: modelData || {}
                     
                     RowLayout {
                         anchors.fill: parent
@@ -91,38 +95,34 @@ Rectangle {
                             spacing: 5
                             
                             Text {
-                                text: favoriteData.flight_number || ""
-                                font.pixelSize: 18
+                                text: "订单号: " + (orderData.booking_id || "")
+                                font.pixelSize: 16
                                 font.bold: true
-                                color: "#2196F3"
                             }
                             
                             Text {
-                                text: (favoriteData.origin || "") + " → " + (favoriteData.destination || "")
+                                text: (orderData.flight_number || "") + " | " + 
+                                      (orderData.origin || "") + " → " + (orderData.destination || "")
                                 font.pixelSize: 14
                                 color: "#666"
                             }
                             
                             Text {
-                                text: "收藏时间: " + formatDateTime(favoriteData.created_at || "")
-                                font.pixelSize: 12
-                                color: "#999"
+                                text: "状态: " + (orderData.status === "confirmed" ? "已确认" : 
+                                                  orderData.status === "cancelled" ? "已取消" : orderData.status || "")
+                                font.pixelSize: 14
+                                color: orderData.status === "confirmed" ? "#4CAF50" : "#f44336"
                             }
-                        }
-                        
-                        Text {
-                            text: "¥" + (favoriteData.price || 0)
-                            font.pixelSize: 24
-                            font.bold: true
-                            color: "#FF9800"
                         }
                         
                         Button {
                             Layout.preferredWidth: 100
                             Layout.preferredHeight: 35
-                            text: "取消收藏"
+                            text: "取消订单"
+                            enabled: orderData.status === "confirmed"
+                            visible: orderData.status === "confirmed"
                             background: Rectangle {
-                                color: parent.pressed ? "#f44336" : "#e57373"
+                                color: parent.enabled ? (parent.pressed ? "#f44336" : "#e57373") : "#cccccc"
                                 radius: 4
                             }
                             contentItem: Text {
@@ -133,25 +133,11 @@ Rectangle {
                                 verticalAlignment: Text.AlignVCenter
                             }
                             onClicked: {
-                                if (favoriteData.flight_id) {
-                                    bridge.removeFavorite(favoriteData.flight_id)
+                                if (orderData.booking_id) {
+                                    bridge.cancelOrder(orderData.booking_id)
                                 }
                             }
                         }
-                    }
-                    
-                    // 辅助函数：格式化日期时间
-                    function formatDateTime(dateTimeString) {
-                        if (!dateTimeString || dateTimeString === "") return ""
-                        var parts = dateTimeString.split("T")
-                        if (parts.length === 2) {
-                            var datePart = parts[0].split("-")
-                            var timePart = parts[1].substring(0, 5)
-                            if (datePart.length === 3) {
-                                return datePart[1] + "-" + datePart[2] + " " + timePart
-                            }
-                        }
-                        return dateTimeString
                     }
                 }
             }
@@ -159,7 +145,14 @@ Rectangle {
     }
     
     Component.onCompleted: {
-        bridge.getMyFavorites()
+        bridge.getMyOrders()
+    }
+    
+    Connections {
+        target: bridge
+        function onCancelOrderSuccess(message) {
+            bridge.getMyOrders()
+        }
     }
 }
 
