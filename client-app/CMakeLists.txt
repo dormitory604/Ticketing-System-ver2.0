@@ -54,9 +54,6 @@ set(PROJECT_SOURCES
         # booking_dialog.cpp
         # booking_dialog.h
         # booking_dialog.ui
-        # favorites_window.cpp
-        # favorites_window.h
-        # favorites_window.ui
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

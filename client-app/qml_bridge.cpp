@@ -1,6 +1,7 @@
 #include "qml_bridge.h"
 #include <QDebug>
 #include <QVariant>
+#include <QDate>
 
 QmlBridge::QmlBridge(QObject *parent)
     : QObject(parent)
@@ -13,16 +14,13 @@ QmlBridge::QmlBridge(QObject *parent)
     connect(&nm, &NetworkManager::registerSuccess, this, &QmlBridge::onRegisterSuccess);
     connect(&nm, &NetworkManager::registerFailed, this, &QmlBridge::onRegisterFailed);
     connect(&nm, &NetworkManager::searchResults, this, &QmlBridge::onSearchResults);
+    connect(&nm, &NetworkManager::searchFailed, this, &QmlBridge::onSearchFailed);
     connect(&nm, &NetworkManager::bookingSuccess, this, &QmlBridge::onBookingSuccess);
     connect(&nm, &NetworkManager::bookingFailed, this, &QmlBridge::onBookingFailed);
     connect(&nm, &NetworkManager::myOrdersResult, this, &QmlBridge::onMyOrdersResult);
+    connect(&nm, &NetworkManager::myOrdersFailed, this, &QmlBridge::onMyOrdersFailed);
     connect(&nm, &NetworkManager::cancelOrderSuccess, this, &QmlBridge::onCancelOrderSuccess);
     connect(&nm, &NetworkManager::cancelOrderFailed, this, &QmlBridge::onCancelOrderFailed);
-    connect(&nm, &NetworkManager::myFavoritesResult, this, &QmlBridge::onMyFavoritesResult);
-    connect(&nm, &NetworkManager::addFavoriteSuccess, this, &QmlBridge::onAddFavoriteSuccess);
-    connect(&nm, &NetworkManager::addFavoriteFailed, this, &QmlBridge::onAddFavoriteFailed);
-    connect(&nm, &NetworkManager::removeFavoriteSuccess, this, &QmlBridge::onRemoveFavoriteSuccess);
-    connect(&nm, &NetworkManager::removeFavoriteFailed, this, &QmlBridge::onRemoveFavoriteFailed);
     connect(&nm, &NetworkManager::profileUpdateSuccess, this, &QmlBridge::onProfileUpdateSuccess);
     connect(&nm, &NetworkManager::profileUpdateFailed, this, &QmlBridge::onProfileUpdateFailed);
     connect(&nm, &NetworkManager::generalError, this, &QmlBridge::onGeneralError);
@@ -52,7 +50,27 @@ void QmlBridge::logout()
 void QmlBridge::searchFlights(const QString& origin, const QString& dest, const QString& date,
                                const QString& cabinClass, const QStringList& passengerTypes)
 {
-    NetworkManager::instance().sendSearchRequest(origin, dest, date, cabinClass, passengerTypes);
+    const QString trimmedOrigin = origin.trimmed();
+    const QString trimmedDest = dest.trimmed();
+
+    if (!trimmedOrigin.isEmpty() && trimmedOrigin.compare(trimmedDest, Qt::CaseInsensitive) == 0) {
+        emit errorOccurred(QStringLiteral("出发地和目的地不能相同"));
+        return;
+    }
+
+    QString normalizedDate = date.trimmed();
+    if (normalizedDate.isEmpty()) {
+        normalizedDate = QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd"));
+    }
+
+    if (m_searchInProgress) {
+        emit errorOccurred(QStringLiteral("上一条查询尚未完成"));
+        return;
+    }
+
+    m_searchInProgress = true;
+    emit searchInProgressChanged();
+    NetworkManager::instance().sendSearchRequest(trimmedOrigin, trimmedDest, normalizedDate, cabinClass, passengerTypes);
 }
 
 void QmlBridge::bookFlight(int flightId)
@@ -62,7 +80,20 @@ void QmlBridge::bookFlight(int flightId)
 
 void QmlBridge::getMyOrders()
 {
-    NetworkManager::instance().getMyOrdersRequest(AppSession::instance().userId());
+    if (m_ordersInProgress) {
+        emit errorOccurred(QStringLiteral("订单请求正在处理中"));
+        return;
+    }
+
+    const int userId = AppSession::instance().userId();
+    if (userId <= 0) {
+        emit errorOccurred(QStringLiteral("请先登录"));
+        return;
+    }
+
+    m_ordersInProgress = true;
+    emit ordersInProgressChanged();
+    NetworkManager::instance().getMyOrdersRequest(userId);
 }
 
 void QmlBridge::cancelOrder(int bookingId)
@@ -70,24 +101,18 @@ void QmlBridge::cancelOrder(int bookingId)
     NetworkManager::instance().cancelOrderRequest(bookingId);
 }
 
-void QmlBridge::getMyFavorites()
-{
-    NetworkManager::instance().getMyFavoritesRequest(AppSession::instance().userId());
-}
-
-void QmlBridge::addFavorite(int flightId)
-{
-    NetworkManager::instance().addFavoriteRequest(AppSession::instance().userId(), flightId);
-}
-
-void QmlBridge::removeFavorite(int flightId)
-{
-    NetworkManager::instance().removeFavoriteRequest(AppSession::instance().userId(), flightId);
-}
-
 void QmlBridge::updateProfile(const QString& username, const QString& password)
 {
-    NetworkManager::instance().updateProfileRequest(AppSession::instance().userId(), username, password);
+    const int userId = AppSession::instance().userId();
+    if (userId <= 0) {
+        emit errorOccurred(QStringLiteral("请先登录"));
+        return;
+    }
+    QJsonObject pending;
+    pending["user_id"] = userId;
+    pending["username"] = username;
+    m_pendingProfileUpdate = pending;
+    NetworkManager::instance().updateProfileRequest(userId, username, password);
 }
 
 void QmlBridge::showRegisterWindow()
@@ -103,11 +128,6 @@ void QmlBridge::showSearchWindow()
 void QmlBridge::showOrdersWindow()
 {
     emit requestShowOrders();
-}
-
-void QmlBridge::showFavoritesWindow()
-{
-    emit requestShowFavorites();
 }
 
 void QmlBridge::showProfileWindow()
@@ -163,6 +183,19 @@ void QmlBridge::onSearchResults(const QJsonArray& flights)
     m_searchResults = jsonArrayToVariantList(flights);
     emit searchResultsChanged();
     emit searchComplete();
+    if (m_searchInProgress) {
+        m_searchInProgress = false;
+        emit searchInProgressChanged();
+    }
+}
+
+void QmlBridge::onSearchFailed(const QString& message)
+{
+    if (m_searchInProgress) {
+        m_searchInProgress = false;
+        emit searchInProgressChanged();
+    }
+    emit errorOccurred(message);
 }
 
 void QmlBridge::onBookingSuccess(const QJsonObject& bookingData)
@@ -180,6 +213,19 @@ void QmlBridge::onMyOrdersResult(const QJsonArray& orders)
     m_myOrders = jsonArrayToVariantList(orders);
     emit myOrdersChanged();
     emit ordersUpdated();
+    if (m_ordersInProgress) {
+        m_ordersInProgress = false;
+        emit ordersInProgressChanged();
+    }
+}
+
+void QmlBridge::onMyOrdersFailed(const QString& message)
+{
+    if (m_ordersInProgress) {
+        m_ordersInProgress = false;
+        emit ordersInProgressChanged();
+    }
+    emit errorOccurred(message);
 }
 
 void QmlBridge::onCancelOrderSuccess(const QString& message)
@@ -194,44 +240,31 @@ void QmlBridge::onCancelOrderFailed(const QString& message)
     emit cancelOrderFailed(message);
 }
 
-void QmlBridge::onMyFavoritesResult(const QJsonArray& favorites)
-{
-    m_myFavorites = jsonArrayToVariantList(favorites);
-    emit myFavoritesChanged();
-    emit favoritesUpdated();
-}
-
-void QmlBridge::onAddFavoriteSuccess(const QString& message)
-{
-    emit addFavoriteSuccess(message);
-}
-
-void QmlBridge::onAddFavoriteFailed(const QString& message)
-{
-    emit addFavoriteFailed(message);
-}
-
-void QmlBridge::onRemoveFavoriteSuccess(const QString& message)
-{
-    emit removeFavoriteSuccess(message);
-    // 自动刷新收藏列表
-    getMyFavorites();
-}
-
-void QmlBridge::onRemoveFavoriteFailed(const QString& message)
-{
-    emit removeFavoriteFailed(message);
-}
-
 void QmlBridge::onProfileUpdateSuccess(const QString& message, const QJsonObject& userData)
 {
-    AppSession::instance().setCurrentUser(userData);
-    emit profileUpdateSuccess(message, userData);
+    QJsonObject updated = userData;
+    if (updated.isEmpty()) {
+        updated = AppSession::instance().currentUser();
+        if (updated.isEmpty()) {
+            updated["user_id"] = AppSession::instance().userId();
+            updated["is_admin"] = AppSession::instance().isAdmin() ? 1 : 0;
+        }
+        if (!m_pendingProfileUpdate.isEmpty()) {
+            const QString username = m_pendingProfileUpdate.value("username").toString();
+            if (!username.isEmpty()) {
+                updated["username"] = username;
+            }
+        }
+    }
+    AppSession::instance().setCurrentUser(updated);
+    m_pendingProfileUpdate = QJsonObject();
+    emit profileUpdateSuccess(message, updated);
     emit currentUsernameChanged();
 }
 
 void QmlBridge::onProfileUpdateFailed(const QString& message)
 {
+    m_pendingProfileUpdate = QJsonObject();
     emit profileUpdateFailed(message);
 }
 

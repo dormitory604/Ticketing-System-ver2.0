@@ -9,7 +9,6 @@ Rectangle {
     
     property var bridge
     signal requestOrders()
-    signal requestFavorites()
     signal requestProfile()
     signal requestLogout()
     
@@ -127,19 +126,6 @@ Rectangle {
                     }
                 }
                 
-                Button {
-                    text: "我的收藏"
-                    onClicked: searchWindow.requestFavorites()
-                    background: Rectangle {
-                        color: parent.pressed ? "#1976D2" : "transparent"
-                        radius: 4
-                    }
-                    contentItem: Text {
-                        text: parent.text
-                        font.pixelSize: 14
-                        color: "white"
-                    }
-                }
                 
                 Button {
                     text: "个人资料"
@@ -201,7 +187,7 @@ Rectangle {
                 Button {
                     id: dateSelectButton
                     Layout.preferredWidth: 180
-                    Layout.preferredHeight: 40
+                    Layout.preferredHeight: destField.implicitHeight
                     text: {
                         if (dateField.text) {
                             var parts = dateField.text.split("-")
@@ -255,7 +241,7 @@ Rectangle {
                 
                 Button {
                     Layout.preferredWidth: 120
-                    Layout.preferredHeight: 40
+                    Layout.preferredHeight: destField.implicitHeight
                     text: "搜索航班"
                     background: Rectangle {
                         color: parent.pressed ? "#1976D2" : "#2196F3"
@@ -273,35 +259,10 @@ Rectangle {
                     }
                 }
                 
-                Button {
-                    Layout.preferredWidth: 100
-                    Layout.preferredHeight: 40
-                    text: "添加到收藏"
-                    enabled: flightListView.currentIndex >= 0
-                    background: Rectangle {
-                        color: parent.enabled ? (parent.pressed ? "#4CAF50" : "#66BB6A") : "#cccccc"
-                        radius: 4
-                    }
-                    contentItem: Text {
-                        text: parent.text
-                        font.pixelSize: 14
-                        color: "white"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                    onClicked: {
-                        if (flightListView.currentIndex >= 0 && bridge && bridge.searchResults) {
-                            var flight = bridge.searchResults[flightListView.currentIndex]
-                            if (flight && flight.flight_id) {
-                                bridge.addFavorite(flight.flight_id)
-                            }
-                        }
-                    }
-                }
                 
                 Button {
                     Layout.preferredWidth: 100
-                    Layout.preferredHeight: 40
+                    Layout.preferredHeight: destField.implicitHeight
                     text: "预订"
                     enabled: flightListView.currentIndex >= 0
                     background: Rectangle {
@@ -488,7 +449,12 @@ Rectangle {
     Connections {
         target: bridge
         function onSearchComplete() {
-            // 搜索结果已更新
+            if (!bridge || !bridge.searchResults || bridge.searchResults.length === 0) {
+                messageBox.messageType = "error"
+                messageBox.messageText = "该线路在所选日期暂无可售航班"
+                messageBox.visible = true
+                messageTimer.restart()
+            }
         }
         function onBookingSuccess(bookingData) {
             messageBox.messageType = "success"
@@ -497,24 +463,6 @@ Rectangle {
             messageTimer.restart()
         }
         function onBookingFailed(message) {
-            messageBox.messageType = "error"
-            messageBox.messageText = message
-            messageBox.visible = true
-            messageTimer.restart()
-        }
-        function onAddFavoriteSuccess(message) {
-            messageBox.messageType = "success"
-            messageBox.messageText = message
-            messageBox.visible = true
-            messageTimer.restart()
-        }
-        function onAddFavoriteFailed(message) {
-            messageBox.messageType = "error"
-            messageBox.messageText = message
-            messageBox.visible = true
-            messageTimer.restart()
-        }
-        function onErrorOccurred(message) {
             messageBox.messageType = "error"
             messageBox.messageText = message
             messageBox.visible = true

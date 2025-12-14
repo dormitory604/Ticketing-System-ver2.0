@@ -12,6 +12,8 @@
 #include <QJsonArray>
 #include <QDebug>
 #include <QQueue>
+#include <QByteArray>
+#include <QStringList>
 
 class NetworkManager : public QObject
 {
@@ -40,9 +42,6 @@ public:
     void getMyOrdersRequest(int userId);
     void cancelOrderRequest(int bookingId);
     void updateProfileRequest(int userId, const QString& username, const QString& password);
-    void addFavoriteRequest(int userId, int flightId);
-    void removeFavoriteRequest(int userId, int flightId);
-    void getMyFavoritesRequest(int userId);
     // ... (注意，每个action都对应一个发送函数，如果后续要新增这里也要加)
 
 signals:
@@ -55,20 +54,17 @@ signals:
     void loginSuccess(const QJsonObject& userData);
     void loginFailed(const QString& message);
     void searchResults(const QJsonArray& flights);
+    void searchFailed(const QString& message);
     void registerSuccess(const QString& message);
     void registerFailed(const QString& message);
     void bookingSuccess(const QJsonObject& bookingData);
     void bookingFailed(const QString& message);
     void myOrdersResult(const QJsonArray& orders);
+    void myOrdersFailed(const QString& message);
     void cancelOrderSuccess(const QString& message);
     void cancelOrderFailed(const QString& message);
     void profileUpdateSuccess(const QString& message, const QJsonObject& userData);
     void profileUpdateFailed(const QString& message);
-    void addFavoriteSuccess(const QString& message);
-    void addFavoriteFailed(const QString& message);
-    void removeFavoriteSuccess(const QString& message);
-    void removeFavoriteFailed(const QString& message);
-    void myFavoritesResult(const QJsonArray& favorites);
     // ... (如果后续要加加在这里)
     void generalError(const QString& message);
 
@@ -86,12 +82,38 @@ private:
     NetworkManager(const NetworkManager&) = delete;
     NetworkManager& operator=(const NetworkManager&) = delete;
 
+    enum class ProtocolMode {
+        LengthPrefixed,
+        PlainJson
+    };
+
+    struct PendingRequest {
+        QString action;
+        QJsonObject payload;
+    };
+
     QTcpSocket *m_socket;
     bool m_tagRegistered;
     QString m_clientTag;
-    QQueue<QString> m_pendingActions;
+    QQueue<PendingRequest> m_pendingRequests;
+    QByteArray m_receiveBuffer;
+    ProtocolMode m_protocolMode;
+    bool m_legacyFallbackAttempted;
+    bool m_reconnectPending;
+    QString m_lastHost;
+    quint16 m_lastPort;
 
     void sendJsonRequest(const QJsonObject& request);
+    void writeFramedJson(const QJsonDocument& document);
+    void emitActionFailed(const QString& action, const QString& message);
+    QJsonObject detachPendingPayload(QString& action);
+    void processLengthPrefixedBuffer();
+    void processPlainJsonBuffer();
+    bool extractPlainJsonMessage(QByteArray& buffer, QByteArray& message);
+    bool looksLikePlainJsonBuffer() const;
+    void handleResponseObject(const QJsonObject& response);
+    void fallbackToLegacyProtocol();
+    void reconnectToLastEndpoint();
 
 #ifdef USE_FAKE_SERVER
     void emitFakeLoginResponse(const QString& username);
@@ -101,9 +123,6 @@ private:
     void emitFakeOrdersResponse(int userId);
     void emitFakeCancelResponse(int bookingId);
     void emitFakeProfileUpdateResponse(int userId, const QString& username);
-    void emitFakeAddFavoriteResponse(int userId, int flightId);
-    void emitFakeRemoveFavoriteResponse(int userId, int flightId);
-    void emitFakeFavoritesResponse(int userId);
 #endif
 };
 

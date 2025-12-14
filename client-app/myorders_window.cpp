@@ -23,6 +23,8 @@ MyOrdersWindow::MyOrdersWindow(QWidget *parent)
 
     connect(&NetworkManager::instance(), &NetworkManager::myOrdersResult,
             this, &MyOrdersWindow::handleOrdersResult);
+        connect(&NetworkManager::instance(), &NetworkManager::myOrdersFailed,
+            this, &MyOrdersWindow::handleOrdersFailed);
     connect(&NetworkManager::instance(), &NetworkManager::cancelOrderSuccess,
             this, &MyOrdersWindow::handleCancelSuccess);
     connect(&NetworkManager::instance(), &NetworkManager::cancelOrderFailed,
@@ -64,11 +66,20 @@ void MyOrdersWindow::handleOrdersResult(const QJsonArray &orders)
     m_latestOrders = orders;
     populateOrdersTable(orders);
     ui->statusLabel->setText(tr("共 %1 个订单").arg(orders.size()));
+    setLoading(false);
+}
+
+void MyOrdersWindow::handleOrdersFailed(const QString &message)
+{
+    QMessageBox::warning(this, tr("拉取失败"), message);
+    ui->statusLabel->setText(message);
+    setLoading(false);
 }
 
 void MyOrdersWindow::handleCancelSuccess(const QString &message)
 {
     QMessageBox::information(this, tr("取消成功"), message);
+    setLoading(false);
     requestOrders();
 }
 
@@ -80,12 +91,19 @@ void MyOrdersWindow::handleCancelFailed(const QString &message)
 
 void MyOrdersWindow::handleGeneralError(const QString &message)
 {
-    QMessageBox::critical(this, tr("错误"), message);
-    ui->statusLabel->setText(message);
+    if (m_loading) {
+        QMessageBox::critical(this, tr("错误"), message);
+        ui->statusLabel->setText(message);
+        setLoading(false);
+    }
 }
 
 void MyOrdersWindow::requestOrders()
 {
+    if (m_loading) {
+        ui->statusLabel->setText(tr("正在加载订单，请稍候"));
+        return;
+    }
     const int userId = AppSession::instance().userId();
     if (userId <= 0) {
         QMessageBox::warning(this, tr("提示"), tr("请先登录"));
@@ -93,6 +111,7 @@ void MyOrdersWindow::requestOrders()
     }
     NetworkManager::instance().getMyOrdersRequest(userId);
     ui->statusLabel->setText(tr("正在拉取订单..."));
+    setLoading(true);
 }
 
 int MyOrdersWindow::currentBookingId() const
@@ -124,4 +143,13 @@ void MyOrdersWindow::populateOrdersTable(const QJsonArray &orders)
         ui->ordersTable->setItem(row, 6, new QTableWidgetItem(QString::number(obj.value("price").toDouble(), 'f', 2)));
     }
     ui->ordersTable->resizeColumnsToContents();
+}
+
+void MyOrdersWindow::setLoading(bool loading)
+{
+    if (m_loading == loading) {
+        return;
+    }
+    m_loading = loading;
+    ui->refreshButton->setEnabled(!loading);
 }

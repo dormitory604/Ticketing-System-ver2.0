@@ -70,7 +70,19 @@ void ProfileWindow::on_closeButton_clicked()
 void ProfileWindow::handleProfileUpdateSuccess(const QString &message, const QJsonObject &userData)
 {
     QMessageBox::information(this, tr("修改成功"), message);
-    AppSession::instance().setCurrentUser(userData);
+    QJsonObject updatedUser = userData;
+    if (updatedUser.isEmpty()) {
+        updatedUser = AppSession::instance().currentUser();
+        if (updatedUser.isEmpty()) {
+            updatedUser["user_id"] = AppSession::instance().userId();
+            updatedUser["is_admin"] = AppSession::instance().isAdmin() ? 1 : 0;
+        }
+        const QString newUsername = ui->usernameLineEdit->text().trimmed();
+        if (!newUsername.isEmpty()) {
+            updatedUser["username"] = newUsername;
+        }
+    }
+    AppSession::instance().setCurrentUser(updatedUser);
     ui->statusLabel->setText(message);
     ui->passwordLineEdit->clear();
     ui->confirmPasswordLineEdit->clear();

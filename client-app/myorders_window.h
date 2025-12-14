@@ -25,6 +25,7 @@ private slots:
     void on_cancelOrderButton_clicked();
 
     void handleOrdersResult(const QJsonArray& orders);
+    void handleOrdersFailed(const QString& message);
     void handleCancelSuccess(const QString& message);
     void handleCancelFailed(const QString& message);
     void handleGeneralError(const QString& message);
@@ -33,9 +34,11 @@ private:
     void requestOrders();
     int currentBookingId() const;
     void populateOrdersTable(const QJsonArray& orders);
+    void setLoading(bool loading);
 
     Ui::MyOrdersWindow *ui;
     QJsonArray m_latestOrders;
+    bool m_loading{false};
 };
 
 #endif // MYORDERS_WINDOW_H

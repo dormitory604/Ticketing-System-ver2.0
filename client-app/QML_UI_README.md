@@ -15,7 +15,6 @@
 - `qml/RegisterWindow.qml` - 注册窗口
 - `qml/SearchWindow.qml` - 航班搜索窗口
 - `qml/OrdersWindow.qml` - 我的订单窗口
-- `qml/FavoritesWindow.qml` - 我的收藏窗口
 - `qml/ProfileWindow.qml` - 个人资料窗口
 
 ### 资源文件
@@ -75,8 +74,6 @@
 | 航班预订 | SearchWindow | SearchWindow.qml | ✅ |
 | 我的订单 | MyOrdersWindow | OrdersWindow.qml | ✅ |
 | 取消订单 | MyOrdersWindow | OrdersWindow.qml | ✅ |
-| 我的收藏 | FavoritesWindow | FavoritesWindow.qml | ✅ |
-| 添加/取消收藏 | SearchWindow/FavoritesWindow | SearchWindow.qml/FavoritesWindow.qml | ✅ |
 | 个人资料 | ProfileWindow | ProfileWindow.qml | ✅ |
 | 网络通信 | NetworkManager | 通过 QmlBridge | ✅ |
 
@@ -92,7 +89,6 @@
    - `isLoggedIn` - 是否已登录
    - `searchResults` - 搜索结果
    - `myOrders` - 我的订单
-   - `myFavorites` - 我的收藏
 
 2. **槽函数（Slots）**：
    - 所有业务操作函数（login, register, search, book 等）
@@ -107,7 +103,7 @@
 使用 `StackView` 管理页面导航：
 - 登录页 → 注册页（可返回）
 - 登录页 → 搜索页（登录成功后）
-- 搜索页 → 订单页/收藏页/资料页（可返回）
+- 搜索页 → 订单页/资料页（可返回）
 
 ### 数据绑定
 

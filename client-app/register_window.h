@@ -27,8 +27,10 @@ private slots:
 
 private:
     void resetForm();
+    void setSubmitting(bool submitting);
 
     Ui::RegisterWindow *ui;
+    bool m_isSubmitting{false};
 };
 
 #endif // REGISTER_WINDOW_H

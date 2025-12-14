@@ -9,8 +9,6 @@
 class MyOrdersWindow;
 class ProfileWindow;
 class BookingDialog;
-class FavoritesWindow;
-
 namespace Ui {
 class SearchWindow;
 }
@@ -30,16 +28,13 @@ private slots:
     void on_searchButton_clicked();
     void on_bookButton_clicked();
     void on_myOrdersButton_clicked();
-    void on_myFavoritesButton_clicked();
     void on_profileButton_clicked();
-    void on_addToFavoritesButton_clicked();
 
     void handleSearchResults(const QJsonArray& flights);
+    void handleSearchFailed(const QString& message);
     void handleBookingSuccess(const QJsonObject& bookingData);
     void handleBookingFailed(const QString& message);
     void handleGeneralError(const QString& message);
-    void handleAddFavoriteSuccess(const QString& message);
-    void handleAddFavoriteFailed(const QString& message);
 
 private:
     void populateFlightsTable(const QJsonArray& flights);
@@ -52,12 +47,13 @@ private:
     QStringList selectedPassengerTypes() const;
     QString passengerSummaryText() const;
     QStringList passengerCandidates() const;
+    void setSearchInProgress(bool inProgress);
 
     Ui::SearchWindow *ui;
     QJsonArray m_latestFlights;
     MyOrdersWindow *m_ordersWindow;
     ProfileWindow *m_profileWindow;
-    FavoritesWindow *m_favoritesWindow;
+    bool m_searchInProgress{false};
 };
 
 #endif // SEARCH_WINDOW_H
