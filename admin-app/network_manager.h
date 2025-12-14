@@ -36,6 +36,9 @@ public:
     // 航班查询(对应server-app中的handleSearchFlights)
     void sendGetAllFlightsRequest();
 
+    // 航班搜索（调用 client 端的接口）
+    void sendSearchFlightsRequest(const QString& origin, const QString& destination, const QString& date);
+
     // 项目接口文档3.3中的5个管理员接口
     // 添加航班(对应server-app与管理员接口handleAdminAddFlight)
     void sendAdminAddFlightRequest(const QJsonObject& flightData);
@@ -77,7 +80,8 @@ private:
     ~NetworkManager();
 
     QTcpSocket* m_socket;
-    const QString SERVER_IP = "43.136.42.69"; // 云服务器
+    //const QString SERVER_IP = "43.136.42.69"; // 云服务器
+    const QString SERVER_IP = "127.0.0.1";
     const quint16 SERVER_PORT = 12345; // 对应 Server main.cpp 里的端口
 
     RequestType m_lastRequestType = None;  // 记录上一次的操作，初始化为None
