@@ -88,4 +88,5 @@ build/
 
 # 忽略通用的 CMake 临时文件
 CMakeLists.txt.user
-*.user
+*.user*.db
+*.db

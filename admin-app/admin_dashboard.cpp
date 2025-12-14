@@ -16,6 +16,9 @@ AdminDashboard::AdminDashboard(QWidget *parent)
     // 初始化表格样式（设置列头）
     setupTables();
 
+    // 应用样式美化
+    applyStyles();
+
     // 连接NetworkManager的信号
     NetworkManager *nm = &NetworkManager::instance();
 
@@ -43,15 +46,20 @@ AdminDashboard::~AdminDashboard()
 void AdminDashboard::setupTables()
 {
     // 设置航班表头
-    ui->flightTable->setColumnCount(9);
-    ui->flightTable->setHorizontalHeaderLabels({"ID", "航班号", "机型", "出发地", "目的地", "起飞时间", "到达时间", "价格", "总座/余票"});
-    ui->flightTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch); // 自适应宽度填满窗口
-    ui->flightTable->setEditTriggers(QAbstractItemView::NoEditTriggers);  // 禁止直接双击表格编辑，只读
-    ui->flightTable->setSelectionBehavior(QAbstractItemView::SelectRows);  // 点击时选中一整行
+    ui->flightTable->setColumnCount(10);
+    ui->flightTable->setHorizontalHeaderLabels({"ID", "航班号", "机型", "出发地", "目的地", "起飞时间", "到达时间", "价格", "总座/余票", "状态"});
+
+    // 所有列根据内容自动调整宽度
+    ui->flightTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    // 让最后一列自动拉伸，填满窗口右边的空白
+    ui->flightTable->horizontalHeader()->setStretchLastSection(true);
+
+    ui->flightTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->flightTable->setSelectionBehavior(QAbstractItemView::SelectRows);
 
     // 设置用户表头
-    ui->userTable->setColumnCount(3);
-    ui->userTable->setHorizontalHeaderLabels({"ID", "用户名", "创建时间"});
+    ui->userTable->setColumnCount(4);
+    ui->userTable->setHorizontalHeaderLabels({"ID", "用户名", "创建时间", "身份"});
     ui->userTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     ui->userTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     ui->userTable->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -73,13 +81,13 @@ void AdminDashboard::on_btnRefresh_clicked()
     // 延迟200毫秒查用户
     QTimer::singleShot(200, [this]()
     {
-        // NetworkManager::instance().sendAdminGetAllUsersRequest();
+        NetworkManager::instance().sendAdminGetAllUsersRequest();
     });
 
     // 延迟400毫秒查订单
     QTimer::singleShot(400, [this]()
     {
-        // NetworkManager::instance().sendAdminGetAllBookingsRequest();
+        NetworkManager::instance().sendAdminGetAllBookingsRequest();
     });
 }
 
@@ -91,6 +99,15 @@ void AdminDashboard::on_btnDeleteFlight_clicked()
     if (currentRow < 0)
     {
         QMessageBox::warning(this, "提示", "请先选择要删除的航班！");
+        return;
+    }
+
+    // 检查是否已删除
+    // 获取状态列的文本
+    QString status = ui->flightTable->item(currentRow, 9)->text();
+    if (status == "已删除")
+    {
+        QMessageBox::warning(this, "操作无效", "该航班已删除，无需重复操作！");
         return;
     }
 
@@ -130,6 +147,14 @@ void AdminDashboard::on_btnEditFlight_clicked()
     if (currentRow < 0)
     {
         QMessageBox::warning(this, "提示", "请先选择要修改的航班！");
+        return;
+    }
+
+    // 检查是否已删除，已删除的航班不能修改
+    QString status = ui->flightTable->item(currentRow, 9)->text();
+    if (status == "已删除")
+    {
+        QMessageBox::warning(this, "操作无效", "已删除的航班无法修改！");
         return;
     }
 
@@ -193,6 +218,31 @@ void AdminDashboard::updateFlightTable(const QJsonArray &flights)
         int total = obj["total_seats"].toInt();
         int remain = obj["remaining_seats"].toInt();
         ui->flightTable->setItem(row, 8, new QTableWidgetItem(QString("%1 / %2").arg(total).arg(remain)));
+
+        // 处理 is_deleted 状态
+        int isDeleted = obj["is_deleted"].toInt();
+        QTableWidgetItem *statusItem;
+
+        if (isDeleted == 1)
+        {
+            statusItem = new QTableWidgetItem("已删除");
+            // 将这一行的所有单元格文字设为灰色
+            for (int col = 0; col <= 8; ++col)
+            {
+                if (ui->flightTable->item(row, col))
+                {
+                    ui->flightTable->item(row, col)->setForeground(Qt::gray);
+                }
+            }
+            statusItem->setForeground(Qt::gray); // 状态列也设为灰色
+        }
+        else
+        {
+            statusItem = new QTableWidgetItem("正常");
+            statusItem->setForeground(QColor("#52c41a")); // 正常显示为绿色
+        }
+
+        ui->flightTable->setItem(row, 9, statusItem); // 填入第10列
     }
 }
 
@@ -212,6 +262,23 @@ void AdminDashboard::updateUserTable(const QJsonArray &users)
         ui->userTable->setItem(row, 0, new QTableWidgetItem(QString::number(obj["user_id"].toInt())));
         ui->userTable->setItem(row, 1, new QTableWidgetItem(obj["username"].toString()));
         ui->userTable->setItem(row, 2, new QTableWidgetItem(obj["created_at"].toString()));
+
+        // 判断身份
+        int isAdmin = obj["is_admin"].toInt();
+        QTableWidgetItem *roleItem;
+
+        if (isAdmin == 1)
+        {
+            roleItem = new QTableWidgetItem("管理员");
+            // 管理员换成蓝色
+            roleItem->setForeground(QColor("#1890ff"));
+        }
+        else
+        {
+            roleItem = new QTableWidgetItem("普通用户");
+            roleItem->setForeground(Qt::black);
+        }
+        ui->userTable->setItem(row, 3, roleItem); // 填入第4列
     }
 }
 
@@ -231,7 +298,38 @@ void AdminDashboard::updateBookingTable(const QJsonArray &bookings)
         ui->bookingTable->setItem(row, 0, new QTableWidgetItem(QString::number(obj["booking_id"].toInt())));
         ui->bookingTable->setItem(row, 1, new QTableWidgetItem(QString::number(obj["user_id"].toInt())));
         ui->bookingTable->setItem(row, 2, new QTableWidgetItem(QString::number(obj["flight_id"].toInt())));
-        ui->bookingTable->setItem(row, 3, new QTableWidgetItem(obj["status"].toString()));
+
+        // 1. 获取两个核心状态
+        int isFlightDeleted = obj["is_deleted"].toInt(); // 航班是否被删除
+        QString dbStatus = obj["status"].toString(); // 数据库里的订单
+
+        QString displayStatus;
+        QTableWidgetItem *statusItem;
+
+        // 2. 逻辑判断
+        // 优先级 1: 先判断 is_deleted
+        if (isFlightDeleted == 1)
+        {
+            displayStatus = "航班已失效";
+            statusItem = new QTableWidgetItem(displayStatus);
+            statusItem->setForeground(Qt::red); // 红色高亮，提示异常
+        }
+        // 优先级 2: 再判断是否 cancelled
+        else if (dbStatus == "cancelled")
+        {
+            displayStatus = "已取消";
+            statusItem = new QTableWidgetItem(displayStatus);
+            statusItem->setForeground(Qt::gray); // 灰色，表示无效
+        }
+        // 优先级 3: 最后才是 confirmed
+        else
+        {
+            displayStatus = "已确认"; // confirmed
+            statusItem = new QTableWidgetItem(displayStatus);
+            statusItem->setForeground(QColor("#52c41a")); // 绿色，正常
+        }
+
+        ui->bookingTable->setItem(row, 3, statusItem);
     }
 }
 
@@ -247,4 +345,163 @@ void AdminDashboard::handleOperationSuccess(const QString &msg)
 void AdminDashboard::handleOperationFailed(const QString &msg)
 {
     QMessageBox::warning(this, "失败", msg);
+}
+
+//样式美化函数
+void AdminDashboard::applyStyles()
+{
+    // 1. 全局字体与背景
+    // 设置一个看起来比较舒服的无衬线字体
+    this->setStyleSheet(R"(
+        QMainWindow
+        {
+            background-color: #f0f2f5;
+        }
+        QWidget
+        {
+            font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+            font-size: 10pt;
+        }
+    )");
+
+    // 2. 表格样式
+    // 这种写法对应所有 QTableWidget
+    QString tableStyle = R"(
+        QTableWidget
+        {
+            background-color: #ffffff;
+            border: 1px solid #dcdcdc;
+            gridline-color: #e0e0e0;
+            selection-background-color: #e6f7ff; /* 选中项浅蓝背景 */
+            selection-color: #000000;            /* 选中项黑色文字 */
+            outline: none;                       /* 去掉选中虚线框 */
+        }
+        QTableWidget::item
+        {
+            padding: 5px; /* 让行高一点，不拥挤 */
+        }
+        QHeaderView::section
+        {
+            background-color: #fafafa;
+            padding: 5px;
+            border: none;
+            border-bottom: 1px solid #dcdcdc;
+            border-right: 1px solid #dcdcdc;
+            font-weight: bold;
+            color: #333333;
+        }
+    )";
+    ui->flightTable->setStyleSheet(tableStyle);
+    ui->userTable->setStyleSheet(tableStyle);
+    ui->bookingTable->setStyleSheet(tableStyle);
+
+    // 开启隔行变色
+    ui->flightTable->setAlternatingRowColors(true);
+    ui->userTable->setAlternatingRowColors(true);
+    ui->bookingTable->setAlternatingRowColors(true);
+
+    // 隐藏垂直表头 (行号)，通常Admin后台不需要显示 1,2,3...
+    ui->flightTable->verticalHeader()->setVisible(false);
+    ui->userTable->verticalHeader()->setVisible(false);
+    ui->bookingTable->verticalHeader()->setVisible(false);
+
+
+    // 3. 按钮通用样式
+    QString btnStyle = R"(
+        QPushButton
+        {
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            background-color: #ffffff;
+            padding: 5px 15px;
+            color: #333333;
+        }
+        QPushButton:hover
+        {
+            border-color: #40a9ff;
+            color: #40a9ff;
+        }
+        QPushButton:pressed
+        {
+            background-color: #f0f0f0;
+        }
+    )";
+
+    // 应用通用样式
+    ui->btnRefresh->setStyleSheet(btnStyle);
+    ui->btnEditFlight->setStyleSheet(btnStyle);
+
+    // 4. 特殊按钮样式
+
+    // [添加航班] - 蓝色主色调，显眼
+    ui->btnAddFlight->setStyleSheet(R"(
+        QPushButton
+        {
+            background-color: #1890ff;
+            border: 1px solid #1890ff;
+            border-radius: 4px;
+            color: white;
+            padding: 5px 15px;
+            font-weight: bold;
+        }
+        QPushButton:hover
+        {
+            background-color: #40a9ff;
+        }
+        QPushButton:pressed
+        {
+            background-color: #096dd9;
+        }
+    )");
+
+    // [删除航班] - 红色警告色，防止误触
+    ui->btnDeleteFlight->setStyleSheet(R"(
+        QPushButton
+        {
+            background-color: #fff1f0;
+            border: 1px solid #ffa39e;
+            border-radius: 4px;
+            color: #ff4d4f;
+            padding: 5px 15px;
+        }
+        QPushButton:hover
+        {
+            background-color: #ff4d4f;
+            color: white;
+            border-color: #ff4d4f;
+        }
+        QPushButton:pressed {
+            background-color: #cf1322;
+        }
+    )");
+
+    // 5. TabWidget 样式 (选项卡)
+    ui->tabWidget->setStyleSheet(R"(
+        QTabWidget::pane
+        {
+            border: 1px solid #dcdcdc;
+            background: white;
+            top: -1px;
+        }
+        QTabBar::tab
+        {
+            background: #fafafa;
+            border: 1px solid #dcdcdc;
+            padding: 8px 20px;
+            margin-right: 2px;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+        }
+        QTabBar::tab:selected
+        {
+            background: white;
+            border-bottom-color: white; /* 看起来和下面连在一起 */
+            font-weight: bold;
+            color: #1890ff;
+        }
+        QTabBar::tab:hover
+        {
+            background: #fff;
+        }
+    )");
 }

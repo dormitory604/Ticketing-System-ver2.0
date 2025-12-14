@@ -284,6 +284,7 @@ QJsonObject TcpServer::handleLogin(const QJsonObject& data)
     }
 }
 
+// 更新用户信息
 QJsonObject TcpServer::handleUpdateProfile(const QJsonObject &data)
 {
     int userId = data.value("user_id").toInt();
@@ -371,6 +372,8 @@ QJsonObject TcpServer::handleSearchFlights(const QJsonObject& data)
 
     QStringList where;
     QMap<QString, QVariant> binds;
+
+    where << "is_deleted = 0";
 
     if (!origin.isEmpty()) {
         where << "origin = :origin";
@@ -586,7 +589,8 @@ QJsonObject TcpServer::handleGetMyOrders(const QJsonObject& data)
             f.destination,
             f.departure_time,
             f.arrival_time,
-            f.price
+            f.price,
+            f.is_deleted
         FROM Booking b
         JOIN Flight f ON b.flight_id = f.flight_id
         WHERE b.user_id = :user_id
@@ -622,6 +626,8 @@ QJsonObject TcpServer::handleGetMyOrders(const QJsonObject& data)
         item["origin"]         = query.value("origin").toString();
         item["destination"]    = query.value("destination").toString();
         item["departure_time"] = query.value("departure_time").toString();
+        item["is_deleted"]     = query.value("is_deleted").toInt();
+
 
         arr.append(item);
     }
@@ -940,7 +946,7 @@ QJsonObject TcpServer::handleAdminDeleteFlight(const QJsonObject& data)
     // 检查航班是否存在
     QSqlQuery q1(DatabaseManager::instance().database());
     q1.prepare(R"(
-        SELECT flight_id
+        SELECT flight_id, is_deleted
         FROM Flight
         WHERE flight_id = :flight_id
     )");
@@ -962,10 +968,20 @@ QJsonObject TcpServer::handleAdminDeleteFlight(const QJsonObject& data)
         };
     }
 
-    // 删除航班
+    // 已删除的航班不重复删除
+    if (q1.value("is_deleted").toInt() == 1) {
+        return {
+            {"status", "error"},
+            {"message", "航班已删除，无需重复操作"},
+            {"data", QJsonValue()}
+        };
+    }
+
+    // 软删除：设置 is_deleted = 1
     QSqlQuery q2(DatabaseManager::instance().database());
     q2.prepare(R"(
-        DELETE FROM Flight
+        UPDATE Flight
+        SET is_deleted = 1
         WHERE flight_id = :flight_id
     )");
     q2.bindValue(":flight_id", flightId);
@@ -973,14 +989,14 @@ QJsonObject TcpServer::handleAdminDeleteFlight(const QJsonObject& data)
     if (!q2.exec()) {
         return {
             {"status", "error"},
-            {"message", "删除失败：" + q2.lastError().text()},
+            {"message", "删除航班失败：" + q2.lastError().text()},
             {"data", QJsonValue()}
         };
     }
 
     return {
         {"status", "success"},
-        {"message", "航班删除成功"},
+        {"message", "航班已成功删除"},
         {"data", QJsonValue()}
     };
 }
@@ -991,7 +1007,7 @@ QJsonObject TcpServer::handleAdminGetAllUsers()
     QSqlQuery query(DatabaseManager::instance().database());
     query.prepare(R"(
         SELECT
-            user_id, username, is_admin
+            user_id, username, is_admin, created_at
         FROM User
         ORDER BY user_id ASC
     )");
@@ -1010,6 +1026,7 @@ QJsonObject TcpServer::handleAdminGetAllUsers()
         QJsonObject obj;
         obj["user_id"]  = query.value("user_id").toInt();
         obj["username"] = query.value("username").toString();
+        obj["is_admin"] = query.value("is_admin").toInt();
         obj["created_at"] = query.value("created_at").toString();
 
         users.append(obj);
@@ -1038,6 +1055,7 @@ QJsonObject TcpServer::handleAdminGetAllBookings()
             Flight.destination,
             Flight.departure_time,
             Flight.arrival_time,
+            Flight.is_deleted,
             Booking.status,
             Booking.booking_time
         FROM Booking
@@ -1069,6 +1087,7 @@ QJsonObject TcpServer::handleAdminGetAllBookings()
         obj["arrival_time"]   = query.value("arrival_time").toString();
         obj["status"]         = query.value("status").toString();
         obj["booking_time"]   = query.value("booking_time").toString();
+        obj["is_deleted"]     = query.value("is_deleted").toInt();
 
         bookings.append(obj);
     }
@@ -1085,11 +1104,10 @@ QJsonObject TcpServer::handleAdminGetAllFlights()
 {
     QSqlQuery query(DatabaseManager::instance().database());
 
-    // FIX: seats → total_seats
     if (!query.exec(R"(
         SELECT flight_id, flight_number, model, origin, destination,
                departure_time, arrival_time,
-               total_seats, remaining_seats, price
+               total_seats, remaining_seats, price, is_deleted
         FROM Flight
         ORDER BY departure_time ASC
     )"))
@@ -1113,9 +1131,10 @@ QJsonObject TcpServer::handleAdminGetAllFlights()
         obj["destination"]     = query.value("destination").toString();
         obj["departure_time"]  = query.value("departure_time").toString();
         obj["arrival_time"]    = query.value("arrival_time").toString();
-        obj["total_seats"]     = query.value("total_seats").toInt();      // FIX
+        obj["total_seats"]     = query.value("total_seats").toInt();
         obj["remaining_seats"] = query.value("remaining_seats").toInt();
         obj["price"]           = query.value("price").toDouble();
+        obj["is_deleted"]      = query.value("is_deleted").toInt();
 
         arr.append(obj);
     }
