@@ -4,7 +4,8 @@
 #include <QDateTime>
 #include <QRandomGenerator>
 
-NetworkManager::NetworkManager(QObject *parent) : QObject(parent), m_tagRegistered(false)
+NetworkManager::NetworkManager(QObject *parent)
+    : QObject(parent), m_tagRegistered(false), m_expectedLen(0)
 {
     m_socket = new QTcpSocket(this);
 
@@ -23,16 +24,48 @@ void NetworkManager::connectToServer(const QString &host, quint16 port)
     m_socket->connectToHost(host, port);
 }
 
-// 当收到服务器数据时 (JSON解析)
+// 当收到服务器数据时 (长度前缀分帧解析)
 void NetworkManager::onReadyRead()
 {
-    QByteArray data = m_socket->readAll();
-    qDebug() << "收到服务器响应:" << data;
+    // 追加收到的数据到缓冲区
+    m_recvBuf.append(m_socket->readAll());
 
-    QJsonDocument jsonDoc = QJsonDocument::fromJson(data);
+    // 循环解析，可能一次解析多条消息
+    while (true)
+    {
+        // 还没读到长度前缀
+        if (m_expectedLen == 0)
+        {
+            if (m_recvBuf.size() < static_cast<int>(sizeof(quint32)))
+                break;
+            quint32 len = qFromBigEndian<quint32>(reinterpret_cast<const uchar *>(m_recvBuf.constData()));
+            m_expectedLen = len;
+            m_recvBuf.remove(0, sizeof(quint32));
+        }
+
+        // 数据不够一帧
+        if (m_recvBuf.size() < static_cast<int>(m_expectedLen))
+            break;
+
+        // 取出完整帧
+        QByteArray frame = m_recvBuf.left(m_expectedLen);
+        m_recvBuf.remove(0, m_expectedLen);
+        m_expectedLen = 0;
+
+        qDebug() << "收到完整帧:" << frame;
+
+        // 处理这一帧
+        processFrame(frame);
+    }
+}
+
+// 处理单个完整的JSON帧
+void NetworkManager::processFrame(const QByteArray &frame)
+{
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(frame);
     if (jsonDoc.isNull() || !jsonDoc.isObject())
     {
-        qWarning() << "收到无效的JSON响应 (非JSON)";
+        qWarning() << "收到无效的JSON格式";
         emit generalError("收到无效的服务器响应 (非JSON)");
         return;
     }
@@ -204,8 +237,17 @@ void NetworkManager::sendTagRegistration(const QString &tag)
     request["tag"] = tag;
 
     QJsonDocument doc(request);
-    m_socket->write(doc.toJson());
-    qDebug() << "发送tag注册请求:" << tag;
+    QByteArray payload = doc.toJson(QJsonDocument::Compact);
+
+    // 添加长度前缀
+    quint32 len = payload.size();
+    QByteArray block;
+    block.resize(sizeof(quint32));
+    qToBigEndian(len, reinterpret_cast<uchar *>(block.data()));
+    block.append(payload);
+
+    m_socket->write(block);
+    qDebug() << "发送tag注册请求(带长度前缀):" << tag << "长度:" << len;
 }
 
 bool NetworkManager::isTagRegistered() const
@@ -241,8 +283,17 @@ void NetworkManager::sendJsonRequest(const QJsonObject &request)
     QString actionName = request.value("action").toString();
 
     QJsonDocument doc(request);
-    m_socket->write(doc.toJson());
-    qDebug() << "发送JSON请求:" << request;
+    QByteArray payload = doc.toJson(QJsonDocument::Compact);
+
+    // 添加长度前缀：[4字节大端长度][JSON字节流]
+    quint32 len = payload.size();
+    QByteArray block;
+    block.resize(sizeof(quint32));
+    qToBigEndian(len, reinterpret_cast<uchar *>(block.data()));
+    block.append(payload);
+
+    m_socket->write(block);
+    qDebug() << "发送JSON请求(带长度前缀):" << request << "长度:" << len;
 
     if (!actionName.isEmpty())
     {
