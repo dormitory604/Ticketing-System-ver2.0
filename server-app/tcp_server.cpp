@@ -1046,21 +1046,25 @@ QJsonObject TcpServer::handleAdminGetAllBookings()
     QSqlQuery query(DatabaseManager::instance().database());
     query.prepare(R"(
         SELECT
-            Booking.booking_id,
-            Booking.user_id,
+            b.booking_id,
+            b.user_id,
+            b.flight_id,
+            b.status,
+            b.booking_time,
+
             User.username,
-            Booking.flight_id,
-            Flight.flight_number,
-            Flight.origin,
-            Flight.destination,
-            Flight.departure_time,
-            Flight.arrival_time,
-            Flight.is_deleted,
-            Booking.status,
-            Booking.booking_time
-        FROM Booking
+
+            f.flight_number,
+            f.model,
+            f.origin,
+            f.destination,
+            f.departure_time,
+            f.arrival_time,
+            f.price,
+            f.is_deleted
+        FROM Booking b
         JOIN User   ON Booking.user_id  = User.user_id
-        JOIN Flight ON Booking.flight_id = Flight.flight_id
+        JOIN Flight f ON Booking.flight_id = Flight.flight_id
         ORDER BY Booking.booking_time DESC
     )");
 
@@ -1076,18 +1080,23 @@ QJsonObject TcpServer::handleAdminGetAllBookings()
 
     while (query.next()) {
         QJsonObject obj;
-        obj["booking_id"]     = query.value("booking_id").toInt();
-        obj["user_id"]        = query.value("user_id").toInt();
-        obj["username"]       = query.value("username").toString();
-        obj["flight_id"]      = query.value("flight_id").toInt();
-        obj["flight_number"]  = query.value("flight_number").toString();
-        obj["origin"]         = query.value("origin").toString();
-        obj["destination"]    = query.value("destination").toString();
-        obj["departure_time"] = query.value("departure_time").toString();
-        obj["arrival_time"]   = query.value("arrival_time").toString();
-        obj["status"]         = query.value("status").toString();
-        obj["booking_time"]   = query.value("booking_time").toString();
-        obj["is_deleted"]     = query.value("is_deleted").toInt();
+
+        obj["booking_id"]      = query.value("booking_id").toInt();
+        obj["user_id"]         = query.value("user_id").toInt();
+        obj["flight_id"]       = query.value("flight_id").toInt();
+        obj["status"]          = query.value("status").toString();
+        obj["booking_time"]    = query.value("booking_time").toString();
+
+        obj["username"]        = query.value("username").toString();
+
+        obj["flight_number"]   = query.value("flight_number").toString();
+        obj["model"]           = query.value("model").toString();
+        obj["origin"]          = query.value("origin").toString();
+        obj["destination"]     = query.value("destination").toString();
+        obj["departure_time"]  = query.value("departure_time").toString();
+        obj["arrival_time"]    = query.value("arrival_time").toString();
+        obj["price"]           = query.value("price").toDouble();
+        obj["is_deleted"]      = query.value("is_deleted").toInt();
 
         bookings.append(obj);
     }
