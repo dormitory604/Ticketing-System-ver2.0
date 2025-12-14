@@ -81,7 +81,7 @@ private:
 
     QTcpSocket* m_socket;
     //const QString SERVER_IP = "43.136.42.69"; // 云服务器
-    const QString SERVER_IP = "127.0.0.1";
+    const QString SERVER_IP = "43.136.42.69";
     const quint16 SERVER_PORT = 12345; // 对应 Server main.cpp 里的端口
 
     RequestType m_lastRequestType = None;  // 记录上一次的操作，初始化为None
