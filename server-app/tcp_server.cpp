@@ -566,9 +566,10 @@ QJsonObject TcpServer::handleBookFlight(const QJsonObject& data)
 // 获取我的订单
 QJsonObject TcpServer::handleGetMyOrders(const QJsonObject& data)
 {
-    int userId = data.value("user_id").toInt();
+    int requesterId = data.value("user_id").toInt();
+    int targetUserId = data.value("target_user_id").toInt(); // 管理员可选
 
-    if (userId <= 0) {
+    if (requesterId <= 0) {
         return {
             {"status", "error"},
             {"message", "user_id 无效"},
@@ -576,9 +577,44 @@ QJsonObject TcpServer::handleGetMyOrders(const QJsonObject& data)
         };
     }
 
-    QSqlQuery query(DatabaseManager::instance().database());
+    // 1. 判断是否为管理员
+    QSqlQuery userQuery(DatabaseManager::instance().database());
+    userQuery.prepare(R"(
+        SELECT is_admin
+        FROM User
+        WHERE user_id = :user_id
+    )");
+    userQuery.bindValue(":user_id", requesterId);
 
-    if (!query.prepare(R"(
+    if (!userQuery.exec() || !userQuery.next()) {
+        return {
+            {"status", "error"},
+            {"message", "用户不存在"},
+            {"data", QJsonValue()}
+        };
+    }
+
+    bool isAdmin = userQuery.value("is_admin").toInt() == 1;
+
+    // 2. 决定最终查询的用户ID
+    int queryUserId = requesterId;
+
+    if (isAdmin && targetUserId > 0) {
+        queryUserId = targetUserId;
+    }
+
+    // 非管理员越权
+    if (!isAdmin && targetUserId > 0 && targetUserId != requesterId) {
+        return {
+            {"status", "error"},
+            {"message", "无权限查询他人订单"},
+            {"data", QJsonValue()}
+        };
+    }
+
+    // 3. 查询订单
+    QSqlQuery query(DatabaseManager::instance().database());
+    query.prepare(R"(
         SELECT
             b.booking_id,
             b.flight_id,
@@ -595,16 +631,9 @@ QJsonObject TcpServer::handleGetMyOrders(const QJsonObject& data)
         JOIN Flight f ON b.flight_id = f.flight_id
         WHERE b.user_id = :user_id
         ORDER BY b.booking_time DESC
-    )"))
-    {
-        return {
-            {"status", "error"},
-            {"message", "查询失败：" + query.lastError().text()},
-            {"data", QJsonValue()}
-        };
-    }
+    )");
 
-    query.bindValue(":user_id", userId);
+    query.bindValue(":user_id", queryUserId);
 
     if (!query.exec()) {
         return {
@@ -618,16 +647,17 @@ QJsonObject TcpServer::handleGetMyOrders(const QJsonObject& data)
 
     while (query.next()) {
         QJsonObject item;
-
         item["booking_id"]     = query.value("booking_id").toInt();
         item["flight_id"]      = query.value("flight_id").toInt();
         item["status"]         = query.value("status").toString();
+        item["booking_time"]   = query.value("booking_time").toString();
         item["flight_number"]  = query.value("flight_number").toString();
         item["origin"]         = query.value("origin").toString();
         item["destination"]    = query.value("destination").toString();
         item["departure_time"] = query.value("departure_time").toString();
+        item["arrival_time"]   = query.value("arrival_time").toString();
+        item["price"]          = query.value("price").toDouble();
         item["is_deleted"]     = query.value("is_deleted").toInt();
-
 
         arr.append(item);
     }
