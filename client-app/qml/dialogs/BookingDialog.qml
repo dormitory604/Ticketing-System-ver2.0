@@ -144,7 +144,6 @@ Popup {
                         radius: 8
                         border.color: "#E3F2FD"
                         border.width: 2
-                        anchors.margins: 25
                         
                         RowLayout {
                             anchors.fill: parent
@@ -251,11 +250,22 @@ Popup {
                             width: parent.width
                             spacing: 8
                             
-                            Text {
-                                text: "乘机人姓名"  // 控件：标签文本
-                                font.pixelSize: 14
-                                font.bold: true
-                                color: "#333"
+                            Row {
+                                spacing: 10
+                                
+                                Text {
+                                    text: "乘机人姓名"  // 控件：标签文本
+                                    font.pixelSize: 14
+                                    font.bold: true
+                                    color: "#333"
+                                }
+                                
+                                Text {
+                                    text: "请输入乘机人姓名"  // 控件：提示文本
+                                    font.pixelSize: 12
+                                    color: passengerField.text.trim().length === 0 ? "#D32F2F" : "#999"  // 控件：为空时显示红色
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
                             }
                             
                             Rectangle {
@@ -269,9 +279,13 @@ Popup {
                                 TextField {
                                     id: passengerField  // 控件ID：用于获取输入的乘机人姓名
                                     anchors.fill: parent
-                                    anchors.margins: 12
-                                    placeholderText: "请输入乘机人姓名"  // 控件：占位符提示文本
+                                    anchors.leftMargin: 12
+                                    anchors.rightMargin: 12
+                                    anchors.topMargin: 4
+                                    anchors.bottomMargin: 4
+                                    placeholderText: ""  // 控件：占位符已移至标签右侧
                                     font.pixelSize: 15
+                                    verticalAlignment: TextInput.AlignVCenter  // 控件：垂直居中对齐
                                     background: Item {}  // 控件：移除默认背景，使用父容器的背景
                                 }
                             }
@@ -305,10 +319,20 @@ Popup {
                                     ComboBox {
                                         id: baggageCombo  // 控件ID：托运行李额下拉选择框
                                         anchors.fill: parent
-                                        anchors.margins: 8
+                                        anchors.leftMargin: 8
+                                        anchors.rightMargin: 8
+                                        anchors.topMargin: 4
+                                        anchors.bottomMargin: 4
                                         model: ["15kg", "20kg", "25kg", "30kg"]  // 控件：可选的行李额选项
                                         font.pixelSize: 15
                                         background: Item {}
+                                        contentItem: Text {
+                                            text: baggageCombo.displayText
+                                            font: baggageCombo.font
+                                            color: "#333"
+                                            verticalAlignment: Text.AlignVCenter
+                                            leftPadding: 5
+                                        }
                                         delegate: ItemDelegate {
                                             width: baggageCombo.width
                                             text: modelData  // 控件：显示选项文本
@@ -342,10 +366,20 @@ Popup {
                                     ComboBox {
                                         id: paymentCombo  // 控件ID：支付方式下拉选择框
                                         anchors.fill: parent
-                                        anchors.margins: 8
+                                        anchors.leftMargin: 8
+                                        anchors.rightMargin: 8
+                                        anchors.topMargin: 4
+                                        anchors.bottomMargin: 4
                                         model: ["支付宝", "微信", "银联", "信用卡"]  // 控件：可选的支付方式选项
                                         font.pixelSize: 15
                                         background: Item {}
+                                        contentItem: Text {
+                                            text: paymentCombo.displayText
+                                            font: paymentCombo.font
+                                            color: "#333"
+                                            verticalAlignment: Text.AlignVCenter
+                                            leftPadding: 5
+                                        }
                                         delegate: ItemDelegate {
                                             width: paymentCombo.width
                                             text: modelData  // 控件：显示选项文本
