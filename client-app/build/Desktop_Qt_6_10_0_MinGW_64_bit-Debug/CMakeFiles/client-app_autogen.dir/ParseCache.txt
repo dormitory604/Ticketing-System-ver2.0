@@ -350,12 +350,14 @@ D:/QTlearn/Ticketing-System-ver2-0/client-app/app_session.h
  mdp:D:/QTlearn/Ticketing-System-ver2-0/client-app/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug/client-app_autogen/moc_predefs.h
 D:/QTlearn/Ticketing-System-ver2-0/client-app/network_manager.h
  mmc:Q_OBJECT
+ mdp:C:/Qt/6.10.0/mingw_64/include/QtCore/QByteArray
  mdp:C:/Qt/6.10.0/mingw_64/include/QtCore/QDebug
  mdp:C:/Qt/6.10.0/mingw_64/include/QtCore/QJsonArray
  mdp:C:/Qt/6.10.0/mingw_64/include/QtCore/QJsonDocument
  mdp:C:/Qt/6.10.0/mingw_64/include/QtCore/QJsonObject
  mdp:C:/Qt/6.10.0/mingw_64/include/QtCore/QObject
  mdp:C:/Qt/6.10.0/mingw_64/include/QtCore/QQueue
+ mdp:C:/Qt/6.10.0/mingw_64/include/QtCore/QStringList
  mdp:C:/Qt/6.10.0/mingw_64/include/QtCore/q17memory.h
  mdp:C:/Qt/6.10.0/mingw_64/include/QtCore/q20functional.h
  mdp:C:/Qt/6.10.0/mingw_64/include/QtCore/q20iterator.h
@@ -716,6 +718,7 @@ D:/QTlearn/Ticketing-System-ver2-0/client-app/network_manager.h
  mdp:D:/QTlearn/Ticketing-System-ver2-0/client-app/network_manager.h
 D:/QTlearn/Ticketing-System-ver2-0/client-app/qml_bridge.h
  mmc:Q_OBJECT
+ mdp:C:/Qt/6.10.0/mingw_64/include/QtCore/QByteArray
  mdp:C:/Qt/6.10.0/mingw_64/include/QtCore/QDebug
  mdp:C:/Qt/6.10.0/mingw_64/include/QtCore/QJsonArray
  mdp:C:/Qt/6.10.0/mingw_64/include/QtCore/QJsonDocument
@@ -724,6 +727,7 @@ D:/QTlearn/Ticketing-System-ver2-0/client-app/qml_bridge.h
  mdp:C:/Qt/6.10.0/mingw_64/include/QtCore/QObject
  mdp:C:/Qt/6.10.0/mingw_64/include/QtCore/QQueue
  mdp:C:/Qt/6.10.0/mingw_64/include/QtCore/QString
+ mdp:C:/Qt/6.10.0/mingw_64/include/QtCore/QStringList
  mdp:C:/Qt/6.10.0/mingw_64/include/QtCore/QVariant
  mdp:C:/Qt/6.10.0/mingw_64/include/QtCore/QVariantList
  mdp:C:/Qt/6.10.0/mingw_64/include/QtCore/q17memory.h

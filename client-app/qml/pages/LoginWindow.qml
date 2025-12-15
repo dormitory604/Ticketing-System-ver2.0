@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import QtQml 2.15
 
 // 登录窗口：应用的主登录界面，提供用户名密码登录功能
 Rectangle {
@@ -78,6 +79,15 @@ Rectangle {
                     Layout.fillWidth: true  // 控件：填充父容器宽度
                     placeholderText: "用户名"  // 控件：占位符提示文本
                     font.pixelSize: 16  // 控件：字体大小
+                    validator: RegularExpressionValidator { regularExpression: /\S*/ } // 不允许输入空格
+                    onTextEdited: {
+                        const cleaned = text.replace(/\s+/g, "")
+                        if (cleaned !== text) {
+                            const delta = text.length - cleaned.length
+                            text = cleaned
+                            cursorPosition = Math.max(0, cursorPosition - delta)
+                        }
+                    }
                 }
                 
                 // 密码输入框
@@ -87,6 +97,15 @@ Rectangle {
                     placeholderText: "密码"  // 控件：占位符提示文本
                     echoMode: TextInput.Password  // 控件：密码模式，输入内容显示为圆点
                     font.pixelSize: 16  // 控件：字体大小
+                    validator: RegularExpressionValidator { regularExpression: /\S*/ } // 不允许输入空格
+                    onTextEdited: {
+                        const cleaned = text.replace(/\s+/g, "")
+                        if (cleaned !== text) {
+                            const delta = text.length - cleaned.length
+                            text = cleaned
+                            cursorPosition = Math.max(0, cursorPosition - delta)
+                        }
+                    }
                 }
                 
                 // 登录按钮：提交用户名和密码到服务器验证

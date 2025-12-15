@@ -4,6 +4,7 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 // 导入 QtQuick.Layouts 模块，提供布局管理（ColumnLayout 等）
 import QtQuick.Layouts 1.15
+import QtQml 2.15
 
 // 控件：注册页面的根容器，使用 Rectangle 作为背景层
 Rectangle {
@@ -96,6 +97,15 @@ Rectangle {
                     placeholderText: "用户名"
                     // 字体大小：16 像素，与密码框保持一致
                     font.pixelSize: 16
+                    validator: RegularExpressionValidator { regularExpression: /\S*/ } // 不允许空格
+                    onTextEdited: {
+                        const cleaned = text.replace(/\s+/g, "")
+                        if (cleaned !== text) {
+                            const delta = text.length - cleaned.length
+                            text = cleaned
+                            cursorPosition = Math.max(0, cursorPosition - delta)
+                        }
+                    }
                 }
                 
                 // 控件：密码输入框 - 用于输入注册密码
@@ -110,6 +120,15 @@ Rectangle {
                     echoMode: TextInput.Password
                     // 字体大小：16 像素
                     font.pixelSize: 16
+                    validator: RegularExpressionValidator { regularExpression: /\S*/ } // 不允许空格
+                    onTextEdited: {
+                        const cleaned = text.replace(/\s+/g, "")
+                        if (cleaned !== text) {
+                            const delta = text.length - cleaned.length
+                            text = cleaned
+                            cursorPosition = Math.max(0, cursorPosition - delta)
+                        }
+                    }
                 }
                 
                 // 控件：确认密码输入框 - 用于再次输入密码进行验证
@@ -124,6 +143,15 @@ Rectangle {
                     echoMode: TextInput.Password
                     // 字体大小：16 像素
                     font.pixelSize: 16
+                    validator: RegularExpressionValidator { regularExpression: /\S*/ } // 不允许空格
+                    onTextEdited: {
+                        const cleaned = text.replace(/\s+/g, "")
+                        if (cleaned !== text) {
+                            const delta = text.length - cleaned.length
+                            text = cleaned
+                            cursorPosition = Math.max(0, cursorPosition - delta)
+                        }
+                    }
                 }
                 
                 // 控件：注册按钮 - 触发注册逻辑

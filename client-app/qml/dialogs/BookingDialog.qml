@@ -246,33 +246,59 @@ Popup {
                         anchors.horizontalCenter: parent.horizontalCenter
                         spacing: 18
                         
-                        // 乘机人姓名输入区域
+                        // 优化后的 乘机人姓名输入区域
                         Column {
                             width: parent.width
-                            spacing: 8
-                            
+                            spacing: 8 // 缩小标签和输入框之间的间距，使其更紧凑
+
+                            // 标签文本
                             Text {
-                                text: "乘机人姓名"  // 控件：标签文本
+                                text: "乘机人姓名"
                                 font.pixelSize: 14
                                 font.bold: true
-                                color: "#333"
+                                color: "#333333" // 使用深灰色，比原先的#333更规范
                             }
-                            
+
+                            // 输入框的容器 (模拟输入框的边框和背景)
                             Rectangle {
                                 width: parent.width
-                                height: 45
-                                color: "#FAFAFA"
-                                radius: 6
-                                border.color: passengerField.focus ? "#2196F3" : "#E0E0E0"  // 控件：获得焦点时边框变蓝
-                                border.width: passengerField.focus ? 2 : 1
+                                height: 40 // 略微减少高度，使其看起来更精致
+                                color: "#FFFFFF" // 输入框背景色设为白色 (如果页面背景不是白色，可根据需要调整)
+                                radius: 4 // 略微减少圆角
                                 
+                                // 非焦点时的边框颜色（使用浅灰色）
+                                property color normalBorderColor: "#CCCCCC" 
+                                // 焦点时的边框颜色（使用蓝色）
+                                property color focusBorderColor: "#2196F3" 
+
+                                // 动态设置边框颜色
+                                border.color: passengerInput.focus ? focusBorderColor : normalBorderColor
+                                border.width: 1 // 边框宽度保持为1，避免在焦点时突然变粗
+
+                                // 文本输入控件
                                 TextField {
-                                    id: passengerField  // 控件ID：用于获取输入的乘机人姓名
+                                    id: passengerField // 控件ID：用于获取输入的乘机人姓名
                                     anchors.fill: parent
-                                    anchors.margins: 12
-                                    placeholderText: "请输入乘机人姓名"  // 控件：占位符提示文本
-                                    font.pixelSize: 15
-                                    background: Item {}  // 控件：移除默认背景，使用父容器的背景
+                                    leftPadding: 10 // 左侧内边距
+                                    rightPadding: 10 // 右侧内边距
+                                    validator: RegularExpressionValidator { regularExpression: /\S*/ } // 不允许输入空格
+                                    onTextEdited: {
+                                        const cleaned = text.replace(/\s+/g, "")
+                                            if (cleaned !== text) {
+                                            const delta = text.length - cleaned.length
+                                            text = cleaned
+                                            cursorPosition = Math.max(0, cursorPosition - delta)
+                                        }
+                    }
+                                    // 占位符提示文本与颜色
+                                    //placeholderText: "请输入乘机人姓名"
+                                    //palette.placeholderText: "#AAAAAA"
+
+                                    //font.pixelSize: 15
+                                    //color: "#333333" // 输入文字颜色
+
+                                    // 让 TextField 背景透明，沿用外层 Rectangle 的背景与边框
+                                    background: Rectangle { color: "transparent"; radius: 0; border.width: 0 }
                                 }
                             }
                         }
