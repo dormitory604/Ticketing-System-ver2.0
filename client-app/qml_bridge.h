@@ -12,27 +12,29 @@
 class QmlBridge : public QObject
 {
     Q_OBJECT
-    
+
     // 会话信息
     Q_PROPERTY(QString currentUsername READ currentUsername NOTIFY currentUsernameChanged)
     Q_PROPERTY(int currentUserId READ currentUserId NOTIFY currentUserIdChanged)
     Q_PROPERTY(bool isLoggedIn READ isLoggedIn NOTIFY isLoggedInChanged)
-    
+    Q_PROPERTY(bool isAdmin READ isAdmin NOTIFY isAdminChanged)
+
     // 搜索相关
     Q_PROPERTY(QVariantList searchResults READ searchResults NOTIFY searchResultsChanged)
     Q_PROPERTY(bool searchInProgress READ searchInProgress NOTIFY searchInProgressChanged)
-    
+
     // 订单相关
     Q_PROPERTY(QVariantList myOrders READ myOrders NOTIFY myOrdersChanged)
     Q_PROPERTY(bool ordersInProgress READ ordersInProgress NOTIFY ordersInProgressChanged)
 
 public:
     explicit QmlBridge(QObject *parent = nullptr);
-    
+
     // 属性读取函数
     QString currentUsername() const { return AppSession::instance().username(); }
     int currentUserId() const { return AppSession::instance().userId(); }
     bool isLoggedIn() const { return AppSession::instance().userId() > 0; }
+    bool isAdmin() const { return AppSession::instance().isAdmin(); }
     QVariantList searchResults() const { return m_searchResults; }
     QVariantList myOrders() const { return m_myOrders; }
     bool searchInProgress() const { return m_searchInProgress; }
@@ -40,24 +42,24 @@ public:
 
 public slots:
     // 登录/注册
-    void login(const QString& username, const QString& password);
-    void registerUser(const QString& username, const QString& password);
+    void login(const QString &username, const QString &password);
+    void registerUser(const QString &username, const QString &password);
     void logout();
-    
+
     // 搜索
-    void searchFlights(const QString& origin, const QString& dest, const QString& date,
-                       const QString& cabinClass = "", const QStringList& passengerTypes = {});
-    
+    void searchFlights(const QString &origin, const QString &dest, const QString &date,
+                       const QString &cabinClass = "", const QStringList &passengerTypes = {});
+
     // 预订
     void bookFlight(int flightId);
-    
+
     // 订单
     void getMyOrders();
     void cancelOrder(int bookingId);
-    
+
     // 个人资料
-    void updateProfile(const QString& username, const QString& password);
-    
+    void updateProfile(const QString &username, const QString &password);
+
     // 窗口管理
     void showRegisterWindow();
     void showSearchWindow();
@@ -70,26 +72,27 @@ signals:
     void currentUsernameChanged();
     void currentUserIdChanged();
     void isLoggedInChanged();
+    void isAdminChanged();
     void searchResultsChanged();
     void myOrdersChanged();
-    
+
     // 操作结果信号
-    void loginSuccess(const QJsonObject& userData);
-    void loginFailed(const QString& message);
-    void registerSuccess(const QString& message);
-    void registerFailed(const QString& message);
+    void loginSuccess(const QJsonObject &userData);
+    void loginFailed(const QString &message);
+    void registerSuccess(const QString &message);
+    void registerFailed(const QString &message);
     void searchComplete();
-    void bookingSuccess(const QJsonObject& bookingData);
-    void bookingFailed(const QString& message);
+    void bookingSuccess(const QJsonObject &bookingData);
+    void bookingFailed(const QString &message);
     void ordersUpdated();
-    void cancelOrderSuccess(const QString& message);
-    void cancelOrderFailed(const QString& message);
+    void cancelOrderSuccess(const QString &message);
+    void cancelOrderFailed(const QString &message);
     void searchInProgressChanged();
     void ordersInProgressChanged();
-    void profileUpdateSuccess(const QString& message, const QJsonObject& userData);
-    void profileUpdateFailed(const QString& message);
-    void errorOccurred(const QString& message);
-    
+    void profileUpdateSuccess(const QString &message, const QJsonObject &userData);
+    void profileUpdateFailed(const QString &message);
+    void errorOccurred(const QString &message);
+
     // 窗口切换信号
     void requestShowRegister();
     void requestShowSearch();
@@ -98,21 +101,21 @@ signals:
     void requestCloseWindow();
 
 private slots:
-    void onLoginSuccess(const QJsonObject& userData);
-    void onLoginFailed(const QString& message);
-    void onRegisterSuccess(const QString& message);
-    void onRegisterFailed(const QString& message);
-    void onSearchResults(const QJsonArray& flights);
-    void onBookingSuccess(const QJsonObject& bookingData);
-    void onBookingFailed(const QString& message);
-    void onMyOrdersResult(const QJsonArray& orders);
-    void onMyOrdersFailed(const QString& message);
-    void onCancelOrderSuccess(const QString& message);
-    void onCancelOrderFailed(const QString& message);
-    void onSearchFailed(const QString& message);
-    void onProfileUpdateSuccess(const QString& message, const QJsonObject& userData);
-    void onProfileUpdateFailed(const QString& message);
-    void onGeneralError(const QString& message);
+    void onLoginSuccess(const QJsonObject &userData);
+    void onLoginFailed(const QString &message);
+    void onRegisterSuccess(const QString &message);
+    void onRegisterFailed(const QString &message);
+    void onSearchResults(const QJsonArray &flights);
+    void onBookingSuccess(const QJsonObject &bookingData);
+    void onBookingFailed(const QString &message);
+    void onMyOrdersResult(const QJsonArray &orders);
+    void onMyOrdersFailed(const QString &message);
+    void onCancelOrderSuccess(const QString &message);
+    void onCancelOrderFailed(const QString &message);
+    void onSearchFailed(const QString &message);
+    void onProfileUpdateSuccess(const QString &message, const QJsonObject &userData);
+    void onProfileUpdateFailed(const QString &message);
+    void onGeneralError(const QString &message);
     void onUserChanged();
 
 private:
@@ -121,11 +124,9 @@ private:
     bool m_searchInProgress{false};
     bool m_ordersInProgress{false};
     QJsonObject m_pendingProfileUpdate;
-    
+
     // 辅助函数：将 QJsonArray 转换为 QVariantList
-    static QVariantList jsonArrayToVariantList(const QJsonArray& jsonArray);
+    static QVariantList jsonArrayToVariantList(const QJsonArray &jsonArray);
 };
 
 #endif // QML_BRIDGE_H
-
-

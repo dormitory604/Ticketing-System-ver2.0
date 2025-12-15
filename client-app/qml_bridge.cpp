@@ -6,8 +6,8 @@
 QmlBridge::QmlBridge(QObject *parent)
     : QObject(parent)
 {
-    NetworkManager& nm = NetworkManager::instance();
-    
+    NetworkManager &nm = NetworkManager::instance();
+
     // 连接所有 NetworkManager 信号
     connect(&nm, &NetworkManager::loginSuccess, this, &QmlBridge::onLoginSuccess);
     connect(&nm, &NetworkManager::loginFailed, this, &QmlBridge::onLoginFailed);
@@ -24,17 +24,17 @@ QmlBridge::QmlBridge(QObject *parent)
     connect(&nm, &NetworkManager::profileUpdateSuccess, this, &QmlBridge::onProfileUpdateSuccess);
     connect(&nm, &NetworkManager::profileUpdateFailed, this, &QmlBridge::onProfileUpdateFailed);
     connect(&nm, &NetworkManager::generalError, this, &QmlBridge::onGeneralError);
-    
+
     // 连接 AppSession 信号
     connect(&AppSession::instance(), &AppSession::userChanged, this, &QmlBridge::onUserChanged);
 }
 
-void QmlBridge::login(const QString& username, const QString& password)
+void QmlBridge::login(const QString &username, const QString &password)
 {
     NetworkManager::instance().sendLoginRequest(username, password);
 }
 
-void QmlBridge::registerUser(const QString& username, const QString& password)
+void QmlBridge::registerUser(const QString &username, const QString &password)
 {
     NetworkManager::instance().sendRegisterRequest(username, password);
 }
@@ -45,25 +45,29 @@ void QmlBridge::logout()
     emit isLoggedInChanged();
     emit currentUsernameChanged();
     emit currentUserIdChanged();
+    emit isAdminChanged();
 }
 
-void QmlBridge::searchFlights(const QString& origin, const QString& dest, const QString& date,
-                               const QString& cabinClass, const QStringList& passengerTypes)
+void QmlBridge::searchFlights(const QString &origin, const QString &dest, const QString &date,
+                              const QString &cabinClass, const QStringList &passengerTypes)
 {
     const QString trimmedOrigin = origin.trimmed();
     const QString trimmedDest = dest.trimmed();
 
-    if (!trimmedOrigin.isEmpty() && trimmedOrigin.compare(trimmedDest, Qt::CaseInsensitive) == 0) {
+    if (!trimmedOrigin.isEmpty() && trimmedOrigin.compare(trimmedDest, Qt::CaseInsensitive) == 0)
+    {
         emit errorOccurred(QStringLiteral("出发地和目的地不能相同"));
         return;
     }
 
     QString normalizedDate = date.trimmed();
-    if (normalizedDate.isEmpty()) {
+    if (normalizedDate.isEmpty())
+    {
         normalizedDate = QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd"));
     }
 
-    if (m_searchInProgress) {
+    if (m_searchInProgress)
+    {
         emit errorOccurred(QStringLiteral("上一条查询尚未完成"));
         return;
     }
@@ -80,13 +84,15 @@ void QmlBridge::bookFlight(int flightId)
 
 void QmlBridge::getMyOrders()
 {
-    if (m_ordersInProgress) {
+    if (m_ordersInProgress)
+    {
         emit errorOccurred(QStringLiteral("订单请求正在处理中"));
         return;
     }
 
     const int userId = AppSession::instance().userId();
-    if (userId <= 0) {
+    if (userId <= 0)
+    {
         emit errorOccurred(QStringLiteral("请先登录"));
         return;
     }
@@ -101,10 +107,11 @@ void QmlBridge::cancelOrder(int bookingId)
     NetworkManager::instance().cancelOrderRequest(bookingId);
 }
 
-void QmlBridge::updateProfile(const QString& username, const QString& password)
+void QmlBridge::updateProfile(const QString &username, const QString &password)
 {
     const int userId = AppSession::instance().userId();
-    if (userId <= 0) {
+    if (userId <= 0)
+    {
         emit errorOccurred(QStringLiteral("请先登录"));
         return;
     }
@@ -141,117 +148,130 @@ void QmlBridge::closeCurrentWindow()
 }
 
 // 信号转发槽函数
-void QmlBridge::onLoginSuccess(const QJsonObject& userData)
+void QmlBridge::onLoginSuccess(const QJsonObject &userData)
 {
     AppSession::instance().setCurrentUser(userData);
     emit loginSuccess(userData);
     emit isLoggedInChanged();
     emit currentUsernameChanged();
     emit currentUserIdChanged();
+    emit isAdminChanged();
 }
 
-void QmlBridge::onLoginFailed(const QString& message)
+void QmlBridge::onLoginFailed(const QString &message)
 {
     emit loginFailed(message);
 }
 
-void QmlBridge::onRegisterSuccess(const QString& message)
+void QmlBridge::onRegisterSuccess(const QString &message)
 {
     emit registerSuccess(message);
 }
 
-void QmlBridge::onRegisterFailed(const QString& message)
+void QmlBridge::onRegisterFailed(const QString &message)
 {
     emit registerFailed(message);
 }
 
-QVariantList QmlBridge::jsonArrayToVariantList(const QJsonArray& jsonArray)
+QVariantList QmlBridge::jsonArrayToVariantList(const QJsonArray &jsonArray)
 {
     QVariantList result;
-    for (const QJsonValue& value : jsonArray) {
-        if (value.isObject()) {
+    for (const QJsonValue &value : jsonArray)
+    {
+        if (value.isObject())
+        {
             result.append(value.toObject().toVariantMap());
-        } else {
+        }
+        else
+        {
             result.append(value.toVariant());
         }
     }
     return result;
 }
 
-void QmlBridge::onSearchResults(const QJsonArray& flights)
+void QmlBridge::onSearchResults(const QJsonArray &flights)
 {
     m_searchResults = jsonArrayToVariantList(flights);
     emit searchResultsChanged();
     emit searchComplete();
-    if (m_searchInProgress) {
+    if (m_searchInProgress)
+    {
         m_searchInProgress = false;
         emit searchInProgressChanged();
     }
 }
 
-void QmlBridge::onSearchFailed(const QString& message)
+void QmlBridge::onSearchFailed(const QString &message)
 {
-    if (m_searchInProgress) {
+    if (m_searchInProgress)
+    {
         m_searchInProgress = false;
         emit searchInProgressChanged();
     }
     emit errorOccurred(message);
 }
 
-void QmlBridge::onBookingSuccess(const QJsonObject& bookingData)
+void QmlBridge::onBookingSuccess(const QJsonObject &bookingData)
 {
     emit bookingSuccess(bookingData);
 }
 
-void QmlBridge::onBookingFailed(const QString& message)
+void QmlBridge::onBookingFailed(const QString &message)
 {
     emit bookingFailed(message);
 }
 
-void QmlBridge::onMyOrdersResult(const QJsonArray& orders)
+void QmlBridge::onMyOrdersResult(const QJsonArray &orders)
 {
     m_myOrders = jsonArrayToVariantList(orders);
     emit myOrdersChanged();
     emit ordersUpdated();
-    if (m_ordersInProgress) {
+    if (m_ordersInProgress)
+    {
         m_ordersInProgress = false;
         emit ordersInProgressChanged();
     }
 }
 
-void QmlBridge::onMyOrdersFailed(const QString& message)
+void QmlBridge::onMyOrdersFailed(const QString &message)
 {
-    if (m_ordersInProgress) {
+    if (m_ordersInProgress)
+    {
         m_ordersInProgress = false;
         emit ordersInProgressChanged();
     }
     emit errorOccurred(message);
 }
 
-void QmlBridge::onCancelOrderSuccess(const QString& message)
+void QmlBridge::onCancelOrderSuccess(const QString &message)
 {
     emit cancelOrderSuccess(message);
     // 自动刷新订单列表
     getMyOrders();
 }
 
-void QmlBridge::onCancelOrderFailed(const QString& message)
+void QmlBridge::onCancelOrderFailed(const QString &message)
 {
     emit cancelOrderFailed(message);
 }
 
-void QmlBridge::onProfileUpdateSuccess(const QString& message, const QJsonObject& userData)
+void QmlBridge::onProfileUpdateSuccess(const QString &message, const QJsonObject &userData)
 {
     QJsonObject updated = userData;
-    if (updated.isEmpty()) {
+    if (updated.isEmpty())
+    {
         updated = AppSession::instance().currentUser();
-        if (updated.isEmpty()) {
+        if (updated.isEmpty())
+        {
             updated["user_id"] = AppSession::instance().userId();
             updated["is_admin"] = AppSession::instance().isAdmin() ? 1 : 0;
         }
-        if (!m_pendingProfileUpdate.isEmpty()) {
+        if (!m_pendingProfileUpdate.isEmpty())
+        {
             const QString username = m_pendingProfileUpdate.value("username").toString();
-            if (!username.isEmpty()) {
+            if (!username.isEmpty())
+            {
                 updated["username"] = username;
             }
         }
@@ -262,13 +282,13 @@ void QmlBridge::onProfileUpdateSuccess(const QString& message, const QJsonObject
     emit currentUsernameChanged();
 }
 
-void QmlBridge::onProfileUpdateFailed(const QString& message)
+void QmlBridge::onProfileUpdateFailed(const QString &message)
 {
     m_pendingProfileUpdate = QJsonObject();
     emit profileUpdateFailed(message);
 }
 
-void QmlBridge::onGeneralError(const QString& message)
+void QmlBridge::onGeneralError(const QString &message)
 {
     emit errorOccurred(message);
 }
@@ -278,6 +298,5 @@ void QmlBridge::onUserChanged()
     emit isLoggedInChanged();
     emit currentUsernameChanged();
     emit currentUserIdChanged();
+    emit isAdminChanged();
 }
-
-
