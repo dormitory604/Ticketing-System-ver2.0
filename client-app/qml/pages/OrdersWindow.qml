@@ -108,19 +108,32 @@ Rectangle {
                             }
                             
                             Text {
-                                text: "状态: " + (orderData.status === "confirmed" ? "已确认" : 
-                                                  orderData.status === "cancelled" ? "已取消" : orderData.status || "")
+                                text: {
+                                    var status = (orderData.status || "").toString().trim().toLowerCase();
+                                    if (status === "confirmed") return "状态: 已确认";
+                                    if (status === "cancelled") return "状态: 已取消";
+                                    return "状态: " + (orderData.status || "未知");
+                                }
                                 font.pixelSize: 14
-                                color: orderData.status === "confirmed" ? "#4CAF50" : "#f44336"
+                                color: {
+                                    var status = (orderData.status || "").toString().trim().toLowerCase();
+                                    if (status === "confirmed") return "#4CAF50";
+                                    if (status === "cancelled") return "#f44336";
+                                    return "#666";
+                                }
                             }
                         }
                         
                         Button {
+                            property bool isConfirmed: {
+                                var status = (orderData.status || "").toString().trim().toLowerCase();
+                                return status === "confirmed";
+                            }
                             Layout.preferredWidth: 100
                             Layout.preferredHeight: 35
                             text: "取消订单"
-                            enabled: orderData.status === "confirmed"
-                            visible: orderData.status === "confirmed"
+                            enabled: isConfirmed
+                            visible: isConfirmed
                             background: Rectangle {
                                 color: parent.enabled ? (parent.pressed ? "#f44336" : "#e57373") : "#cccccc"
                                 radius: 4
